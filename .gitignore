@@ -1,0 +1,123 @@
+# ===========================
+# TalentFlow AI - .gitignore
+# SE3090_SE012 Monorepo
+# ===========================
+
+# ===========================
+# .NET / ASP.NET Core
+# ===========================
+backend/**/bin/
+backend/**/obj/
+backend/**/.vs/
+backend/**/*.user
+backend/**/*.suo
+backend/**/*.cache
+backend/**/project.lock.json
+backend/**/*.userprefs
+*.nupkg
+
+# ===========================
+# Node.js / React
+# ===========================
+frontend/react-app/node_modules/
+frontend/react-app/dist/
+frontend/react-app/.env
+frontend/react-app/.env.local
+frontend/react-app/.env.production
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===========================
+# Flutter / Dart
+# ===========================
+frontend/flutter-app/.dart_tool/
+frontend/flutter-app/.packages
+frontend/flutter-app/.pub-cache/
+frontend/flutter-app/.pub/
+frontend/flutter-app/build/
+frontend/flutter-app/.flutter-plugins
+frontend/flutter-app/.flutter-plugins-dependencies
+frontend/flutter-app/android/.gradle/
+frontend/flutter-app/android/local.properties
+frontend/flutter-app/android/app/debug/
+frontend/flutter-app/android/app/profile/
+frontend/flutter-app/android/app/release/
+frontend/flutter-app/ios/Pods/
+frontend/flutter-app/ios/.symlinks/
+frontend/flutter-app/ios/Flutter/Flutter.framework
+frontend/flutter-app/ios/Flutter/Flutter.podspec
+frontend/flutter-app/.metadata
+*.g.dart
+*.freezed.dart
+
+# ===========================
+# Python / AI Service
+# ===========================
+agentic-ai/venv/
+agentic-ai/.venv/
+agentic-ai/__pycache__/
+agentic-ai/**/__pycache__/
+agentic-ai/**/*.pyc
+agentic-ai/.env
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ===========================
+# IDE / Editors
+# ===========================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ===========================
+# OS Generated
+# ===========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===========================
+# Environment / Secrets
+# ===========================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+appsettings.Production.json
+appsettings.Staging.json
+
+# ===========================
+# Docker
+# ===========================
+docker-compose.override.yml
+
+# ===========================
+# Performance test results
+# ===========================
+performance/results/*.json
+performance/results/*.html
+
+# ===========================
+# Coverage reports
+# ===========================
+coverage/
+*.lcov
+TestResults/

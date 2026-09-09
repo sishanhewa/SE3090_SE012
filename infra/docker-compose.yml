@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: talentflow-postgres
+    environment:
+      POSTGRES_DB: talentflow
+      POSTGRES_USER: talentflow_user
+      POSTGRES_PASSWORD: talentflow_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U talentflow_user -d talentflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: talentflow-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=talentflow;Username=talentflow_user;Password=talentflow_dev_password
+      - AI_SERVICE_URL=http://ai-service:8000
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Jwt__Key=dev-jwt-secret-key-minimum-32-characters-long-here
+      - Jwt__Issuer=TalentFlowAPI
+      - Jwt__Audience=TalentFlowClients
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ai-service:
+    build:
+      context: ../agentic-ai
+      dockerfile: Dockerfile
+    container_name: talentflow-ai
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - BACKEND_INTERNAL_URL=http://backend:5000
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

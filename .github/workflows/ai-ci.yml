@@ -1,0 +1,41 @@
+name: AI Service CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'agentic-ai/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'agentic-ai/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+          cache-dependency-path: agentic-ai/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        working-directory: agentic-ai
+
+      - name: Lint with Ruff
+        run: ruff check .
+        working-directory: agentic-ai
+
+      - name: Run tests
+        run: pytest --tb=short -v
+        working-directory: agentic-ai
+        env:
+          GEMINI_API_KEY: "test-key-for-ci"
+          BACKEND_INTERNAL_URL: "http://localhost:5000"
