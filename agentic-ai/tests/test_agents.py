@@ -1,5 +1,4 @@
 """Basic test to verify the AI service starts correctly."""
-import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 
