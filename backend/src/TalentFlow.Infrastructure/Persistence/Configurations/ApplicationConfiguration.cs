@@ -1,12 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TalentFlow.Domain.Entities;
+using ApplicationEntity = TalentFlow.Domain.Entities.Application;
 
 namespace TalentFlow.Infrastructure.Persistence.Configurations;
 
-public class ApplicationConfiguration : IEntityTypeConfiguration<Application>
+public class ApplicationConfiguration : IEntityTypeConfiguration<ApplicationEntity>
 {
-    public void Configure(EntityTypeBuilder<Application> builder)
+    public void Configure(EntityTypeBuilder<ApplicationEntity> builder)
     {
         builder.HasKey(a => a.Id);
 

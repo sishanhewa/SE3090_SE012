@@ -30,7 +30,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<CandidateEducation> CandidateEducation => Set<CandidateEducation>();
     public DbSet<CandidateExperience> CandidateExperience => Set<CandidateExperience>();
     public DbSet<CandidateDocument> CandidateDocuments => Set<CandidateDocument>();
-    public DbSet<Application> Applications => Set<Application>();
+    public DbSet<Domain.Entities.Application> Applications => Set<Domain.Entities.Application>();
     public DbSet<ApplicationHistory> ApplicationHistory => Set<ApplicationHistory>();
 
     // Interview & Hiring Management
