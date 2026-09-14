@@ -110,30 +110,30 @@ The system integrates a **React** web application (HR/Admin), **Flutter** mobile
 git clone https://github.com/sishanhewa/SE3090_SE012.git
 cd SE3090_SE012
 
-# 2. Copy environment variables
-cp .env.example .env
-# Edit .env with your actual values
+# 2. Start PostgreSQL via Docker Compose
+# Note: The database runs on port 5433 (mapped from 5432) to avoid conflicts with local Postgres installs.
+# It uses user: talentflow_user | password: talentflow_dev_password
+docker-compose -f infra/docker-compose.dev.yml up -d
 
-# 3. Start PostgreSQL (if using Docker)
-docker compose -f infra/docker-compose.dev.yml up -d postgres
-
-# 4. Backend
-cd backend
+# 3. Backend
+cd backend/src/TalentFlow.Api
 dotnet restore
-dotnet ef database update --project src/TalentFlow.Infrastructure --startup-project src/TalentFlow.Api
-dotnet run --project src/TalentFlow.Api
+# Apply Entity Framework Core migrations to generate the database
+dotnet ef database update --project ../TalentFlow.Infrastructure --startup-project .
+# Run the API
+dotnet run
 
-# 5. React (in a new terminal)
+# 4. React (in a new terminal)
 cd frontend/react-app
 npm install
 npm run dev
 
-# 6. Flutter (in a new terminal)
+# 5. Flutter (in a new terminal)
 cd frontend/flutter-app
 flutter pub get
 flutter run
 
-# 7. AI Service (in a new terminal)
+# 6. AI Service (in a new terminal)
 cd agentic-ai
 python3 -m venv venv
 source venv/bin/activate
@@ -144,17 +144,18 @@ uvicorn app.main:app --reload --port 8000
 ### API Documentation
 
 After starting the backend, visit:
-- **Swagger UI**: http://localhost:5000/swagger
-- **Health Check**: http://localhost:5000/health
+- **Swagger UI**: https://localhost:5001/swagger or http://localhost:5000/swagger
 
 ### Test Accounts
 
+The following test accounts are automatically seeded into the database upon startup:
+
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | admin@talentflow.com | Admin@123 |
-| Recruiter | recruiter@talentflow.com | Recruiter@123 |
-| Hiring Manager | manager@talentflow.com | Manager@123 |
-| Candidate | candidate@talentflow.com | Candidate@123 |
+| System Admin | admin@talentflow.com | Admin@123456 |
+| Recruiter | (Not yet seeded) | |
+| Hiring Manager | (Not yet seeded) | |
+| Candidate | (Not yet seeded) | |
 
 ## 🧪 Running Tests
 
