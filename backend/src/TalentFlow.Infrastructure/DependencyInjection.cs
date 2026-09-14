@@ -52,6 +52,8 @@ public static class DependencyInjection
         services.AddScoped<ICompanyRepository, CompanyRepository>();
         services.AddScoped<ICompanyService, CompanyService>();
         services.AddScoped<IJobService, JobService>();
+        services.AddScoped<IApplicationService, ApplicationService>();
+        services.AddScoped<ICandidateProfileService, CandidateProfileService>();
 
         return services;
     }
