@@ -4,6 +4,8 @@ import DashboardLayout from './components/layouts/DashboardLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import NotFoundPage from './pages/NotFoundPage';
+import ApplicationsPage from './pages/ApplicationsPage';
+import CandidateProfilePage from './pages/CandidateProfilePage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -31,8 +33,9 @@ export default function App() {
         {/* Member 1: Company & Job routes */}
         <Route path="companies" element={<div>Companies — Coming Soon</div>} />
         <Route path="jobs" element={<div>Jobs — Coming Soon</div>} />
-        {/* Member 2: Applications routes */}
-        <Route path="applications" element={<div>Applications — Coming Soon</div>} />
+        {/* Member 2: Applications & Candidate Profile routes */}
+        <Route path="applications" element={<ApplicationsPage />} />
+        <Route path="profile" element={<CandidateProfilePage />} />
         {/* Member 3: Interviews routes */}
         <Route path="interviews" element={<div>Interviews — Coming Soon</div>} />
         <Route path="offers" element={<div>Offers — Coming Soon</div>} />
