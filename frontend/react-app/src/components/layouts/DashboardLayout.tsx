@@ -10,6 +10,7 @@ import {
   Users,
   Rocket,
   LogOut,
+  UserCircle,
 } from 'lucide-react';
 
 const navItems = [
@@ -17,6 +18,7 @@ const navItems = [
   { to: '/companies', label: 'Companies', icon: Building2 },
   { to: '/jobs', label: 'Jobs', icon: Briefcase },
   { to: '/applications', label: 'Applications', icon: FileText },
+  { to: '/profile', label: 'Profile', icon: UserCircle },
   { to: '/interviews', label: 'Interviews', icon: CalendarDays },
   { to: '/offers', label: 'Offers', icon: Mail },
   { to: '/employees', label: 'Employees', icon: Users },
