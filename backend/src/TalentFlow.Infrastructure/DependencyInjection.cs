@@ -3,9 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TalentFlow.Application.Interfaces.Repositories;
+using TalentFlow.Application.Interfaces.Services;
 using TalentFlow.Domain.Entities;
 using TalentFlow.Infrastructure.Persistence;
 using TalentFlow.Infrastructure.Repositories;
+using TalentFlow.Infrastructure.Services;
 
 namespace TalentFlow.Infrastructure;
 
@@ -48,6 +50,8 @@ public static class DependencyInjection
         services.AddScoped<IInterviewRepository, InterviewRepository>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<ICompanyRepository, CompanyRepository>();
+        services.AddScoped<ICompanyService, CompanyService>();
+        services.AddScoped<IJobService, JobService>();
 
         return services;
     }
