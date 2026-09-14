@@ -10,6 +10,7 @@ import JobsPage from './pages/JobsPage';
 import JobDetailsPage from './pages/JobDetailsPage';
 import ApplicationsPage from './pages/ApplicationsPage';
 import CandidateProfilePage from './pages/CandidateProfilePage';
+import InterviewsPage from './pages/InterviewsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -43,7 +44,7 @@ export default function App() {
         <Route path="applications" element={<ApplicationsPage />} />
         <Route path="profile" element={<CandidateProfilePage />} />
         {/* Member 3: Interviews routes */}
-        <Route path="interviews" element={<div>Interviews — Coming Soon</div>} />
+        <Route path="interviews" element={<InterviewsPage />} />
         <Route path="offers" element={<div>Offers — Coming Soon</div>} />
         {/* Member 4: Employees routes */}
         <Route path="employees" element={<div>Employees — Coming Soon</div>} />
