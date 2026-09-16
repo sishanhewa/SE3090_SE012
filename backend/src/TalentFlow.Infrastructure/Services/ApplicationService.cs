@@ -31,6 +31,9 @@ public class ApplicationService : IApplicationService
         if (job.Status != JobStatus.Published)
             return Result<ApplicationResponse>.Failure("Job is not currently accepting applications");
 
+        if (job.ApplicationDeadline.HasValue && job.ApplicationDeadline.Value < DateTime.UtcNow)
+            return Result<ApplicationResponse>.Failure("The application deadline for this job has passed.");
+
         var hasApplied = await _applicationRepository.HasAppliedAsync(jobId, candidateProfileId, cancellationToken);
         if (hasApplied)
             return Result<ApplicationResponse>.Conflict("You have already applied for this job");
