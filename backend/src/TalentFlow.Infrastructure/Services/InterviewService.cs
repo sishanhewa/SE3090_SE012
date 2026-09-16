@@ -28,6 +28,9 @@ public class InterviewService : IInterviewService
         if (application == null)
             return Result<InterviewResponse>.NotFound("Application not found.");
 
+        if (application.Status != Domain.Enums.ApplicationStatus.Shortlisted && application.Status != Domain.Enums.ApplicationStatus.Interview)
+            return Result<InterviewResponse>.Failure("Interviews can only be scheduled for applications in 'Shortlisted' or 'Interview' status.", "InvalidStateTransition");
+
         var interview = new Interview
         {
             ApplicationId = request.ApplicationId,
