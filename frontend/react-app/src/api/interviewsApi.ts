@@ -29,8 +29,8 @@ export interface ProvideFeedbackRequest {
 
 export const interviewsApi = {
   getAll: async () => {
-    const response = await apiClient.get<InterviewResponse[]>('/interviews');
-    return response.data;
+    const response = await apiClient.get<PagedResult<InterviewResponse>>('/interviews');
+    return response.data.items;
   },
   getById: async (id: string) => {
     const response = await apiClient.get<InterviewResponse>(`/interviews/${id}`);

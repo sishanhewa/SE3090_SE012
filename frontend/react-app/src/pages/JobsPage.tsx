@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { jobsApi, type JobResponse, type CreateJobRequest } from '../api/jobsApi';
 import { companiesApi, type CompanyResponse } from '../api/companiesApi';
+import { useAuthStore } from '../store/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -11,6 +12,8 @@ import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 
 export default function JobsPage() {
+  const { user } = useAuthStore();
+  const isAdmin = user?.roles?.includes('SystemAdmin');
   const [jobs, setJobs] = useState<JobResponse[]>([]);
   const [companies, setCompanies] = useState<CompanyResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +73,9 @@ export default function JobsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Jobs</h2>
-          <p className="text-muted-foreground">Manage job postings across all companies.</p>
+          <p className="text-muted-foreground">
+            {isAdmin ? 'Manage job postings across all companies.' : 'Manage your company\'s job postings.'}
+          </p>
         </div>
         
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

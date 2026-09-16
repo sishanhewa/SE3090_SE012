@@ -22,8 +22,8 @@ export interface CreateEmployeeRequest {
 
 export const employeesApi = {
   getAll: async () => {
-    const response = await apiClient.get<EmployeeResponse[]>('/employees');
-    return response.data;
+    const response = await apiClient.get<PagedResult<EmployeeResponse>>('/employees');
+    return response.data.items;
   },
   getById: async (id: string) => {
     const response = await apiClient.get<EmployeeResponse>(`/employees/${id}`);

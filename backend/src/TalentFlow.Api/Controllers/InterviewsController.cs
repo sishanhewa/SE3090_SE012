@@ -21,7 +21,7 @@ public class InterviewsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Coordinator,Interviewer")]
+    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter,HiringManager")]
     public async Task<IActionResult> ScheduleInterview([FromBody] CreateInterviewRequest request)
     {
         var result = await _interviewService.ScheduleInterviewAsync(request);
@@ -55,7 +55,7 @@ public class InterviewsController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Coordinator,Interviewer")]
+    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter,HiringManager")]
     public async Task<IActionResult> UpdateInterview(Guid id, [FromBody] UpdateInterviewRequest request)
     {
         var result = await _interviewService.UpdateInterviewAsync(id, request);
@@ -69,7 +69,7 @@ public class InterviewsController : ControllerBase
     }
 
     [HttpPost("{id}/cancel")]
-    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Coordinator,Interviewer")]
+    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter,HiringManager")]
     public async Task<IActionResult> CancelInterview(Guid id)
     {
         var result = await _interviewService.CancelInterviewAsync(id);

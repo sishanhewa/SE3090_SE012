@@ -24,8 +24,8 @@ export interface CreateCompanyRequest {
 
 export const companiesApi = {
   getAll: async () => {
-    const response = await apiClient.get<CompanyResponse[]>('/companies');
-    return response.data;
+    const response = await apiClient.get<PagedResult<CompanyResponse>>('/companies');
+    return response.data.items;
   },
   getById: async (id: string) => {
     const response = await apiClient.get<CompanyResponse>(`/companies/${id}`);

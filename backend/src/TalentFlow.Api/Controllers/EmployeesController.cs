@@ -21,7 +21,7 @@ public class EmployeesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "SystemAdmin,CompanyAdmin,HR")]
+    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter,HiringManager")]
     public async Task<IActionResult> CreateEmployee(Guid companyId, [FromBody] CreateEmployeeRequest request)
     {
         var result = await _employeeService.CreateEmployeeAsync(companyId, request);
@@ -35,7 +35,7 @@ public class EmployeesController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "SystemAdmin,CompanyAdmin,HR,Employee")]
+    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter,HiringManager,Employee")]
     public async Task<IActionResult> GetEmployee(Guid companyId, Guid id)
     {
         var result = await _employeeService.GetEmployeeByIdAsync(id);
@@ -49,7 +49,7 @@ public class EmployeesController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = "SystemAdmin,CompanyAdmin,HR")]
+    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter,HiringManager")]
     public async Task<IActionResult> GetEmployees(Guid companyId, [FromQuery] PaginationParams paginationParams)
     {
         var result = await _employeeService.GetEmployeesByCompanyAsync(companyId, paginationParams);
@@ -60,7 +60,7 @@ public class EmployeesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "SystemAdmin,CompanyAdmin,HR")]
+    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter,HiringManager")]
     public async Task<IActionResult> UpdateEmployee(Guid companyId, Guid id, [FromBody] UpdateEmployeeRequest request)
     {
         var result = await _employeeService.UpdateEmployeeAsync(id, companyId, request);

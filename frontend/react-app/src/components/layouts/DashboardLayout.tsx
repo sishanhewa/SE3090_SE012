@@ -11,19 +11,46 @@ import {
   Rocket,
   LogOut,
   UserCircle,
+  Shield,
 } from 'lucide-react';
 
-const navItems = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/companies', label: 'Companies', icon: Building2 },
-  { to: '/jobs', label: 'Jobs', icon: Briefcase },
-  { to: '/applications', label: 'Applications', icon: FileText },
-  { to: '/profile', label: 'Profile', icon: UserCircle },
-  { to: '/interviews', label: 'Interviews', icon: CalendarDays },
-  { to: '/offers', label: 'Offers', icon: Mail },
-  { to: '/employees', label: 'Employees', icon: Users },
-  { to: '/onboarding', label: 'Onboarding', icon: Rocket },
+// Each item declares which roles can see it.
+// An empty array means visible to ALL authenticated users.
+const allNavItems = [
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: [] },
+
+  // Company management
+  { to: '/companies', label: 'Companies', icon: Building2, roles: ['SystemAdmin', 'Recruiter', 'HiringManager'] },
+
+  // Recruiters, HiringManagers, Admins manage jobs
+  { to: '/jobs', label: 'Jobs', icon: Briefcase, roles: ['SystemAdmin', 'Recruiter', 'HiringManager'] },
+
+  // Recruiters, HiringManagers review applications; Candidates see their own
+  { to: '/applications', label: 'Applications', icon: FileText, roles: ['SystemAdmin', 'Recruiter', 'HiringManager', 'Candidate'] },
+
+  // Candidate profile
+  { to: '/profile', label: 'My Profile', icon: UserCircle, roles: ['Candidate'] },
+
+  // Interviews — Recruiters schedule, HiringManagers/Candidates view
+  { to: '/interviews', label: 'Interviews', icon: CalendarDays, roles: ['SystemAdmin', 'Recruiter', 'HiringManager'] },
+
+  // Offers — HiringManagers create, Recruiters view
+  { to: '/offers', label: 'Offers', icon: Mail, roles: ['SystemAdmin', 'Recruiter', 'HiringManager'] },
+
+  // Employee management — HR/Admin
+  { to: '/employees', label: 'Employees', icon: Users, roles: ['SystemAdmin', 'Recruiter', 'HiringManager'] },
+
+  // Onboarding — HR/Admin
+  { to: '/onboarding', label: 'Onboarding', icon: Rocket, roles: ['SystemAdmin', 'Recruiter', 'HiringManager'] },
 ];
+
+const roleBadgeColors: Record<string, string> = {
+  SystemAdmin: 'bg-red-100 text-red-700',
+  Recruiter: 'bg-blue-100 text-blue-700',
+  HiringManager: 'bg-amber-100 text-amber-700',
+  Candidate: 'bg-green-100 text-green-700',
+  Employee: 'bg-purple-100 text-purple-700',
+};
 
 export default function DashboardLayout() {
   const { user, logout } = useAuthStore();
@@ -33,6 +60,14 @@ export default function DashboardLayout() {
     logout();
     navigate('/login');
   };
+
+  const userRoles = user?.roles ?? [];
+  const primaryRole = userRoles[0] ?? 'User';
+
+  // Filter nav items: show if roles array is empty (all) or user has at least one matching role
+  const visibleNavItems = allNavItems.filter(
+    (item) => item.roles.length === 0 || item.roles.some((r) => userRoles.includes(r)),
+  );
 
   return (
     <div className="flex h-screen bg-muted/20">
@@ -48,7 +83,7 @@ export default function DashboardLayout() {
           </div>
 
           <nav className="p-4 space-y-1">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
@@ -81,7 +116,10 @@ export default function DashboardLayout() {
               <span className="text-sm font-medium text-foreground">
                 {user?.firstName || 'User'} {user?.lastName || ''}
               </span>
-              <span className="text-xs text-muted-foreground">{user?.roles?.[0] ?? 'User'}</span>
+              <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full w-fit mt-0.5 flex items-center gap-1 ${roleBadgeColors[primaryRole] ?? 'bg-muted text-muted-foreground'}`}>
+                <Shield className="h-3 w-3" />
+                {primaryRole}
+              </span>
             </div>
           </div>
           <button
@@ -101,3 +139,4 @@ export default function DashboardLayout() {
     </div>
   );
 }
+

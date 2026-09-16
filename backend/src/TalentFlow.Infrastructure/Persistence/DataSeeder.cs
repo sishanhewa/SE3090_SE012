@@ -18,6 +18,7 @@ public static class DataSeeder
         {
             await SeedRolesAsync(serviceProvider, logger);
             await SeedAdminUserAsync(serviceProvider, logger);
+            await SeedSampleDataAsync(serviceProvider, logger);
         }
         catch (Exception ex)
         {
@@ -74,6 +75,114 @@ public static class DataSeeder
         {
             logger.LogWarning("Failed to create admin user: {Errors}",
                 string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
+    }
+
+    private static async Task SeedSampleDataAsync(IServiceProvider serviceProvider, ILogger logger)
+    {
+        var dbContext = serviceProvider.GetRequiredService<AppDbContext>();
+        var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        // Seed Sample Company & Departments
+        if (!dbContext.Companies.Any())
+        {
+            var company = new Company
+            {
+                Name = "TechNova Solutions",
+                Industry = "Software Development",
+                Address = "San Francisco, CA",
+                IsActive = true
+            };
+            dbContext.Companies.Add(company);
+            await dbContext.SaveChangesAsync();
+
+            var engineeringDept = new Department { Name = "Engineering", CompanyId = company.Id };
+            var hrDept = new Department { Name = "Human Resources", CompanyId = company.Id };
+            dbContext.Departments.AddRange(engineeringDept, hrDept);
+            await dbContext.SaveChangesAsync();
+
+            logger.LogInformation("Seeded company and departments.");
+
+            // Seed Sample Jobs
+            var job1 = new Job
+            {
+                CompanyId = company.Id,
+                DepartmentId = engineeringDept.Id,
+                Title = "Senior Backend Engineer",
+                Description = "Looking for a seasoned backend engineer with C# and .NET Core experience.",
+                EmploymentType = "Full Time",
+                Location = "Remote",
+                MinimumExperience = 5,
+                VacancyCount = 2,
+                ApplicationDeadline = DateTime.UtcNow.AddDays(30),
+                Status = TalentFlow.Domain.Enums.JobStatus.Published
+            };
+            var job2 = new Job
+            {
+                CompanyId = company.Id,
+                DepartmentId = hrDept.Id,
+                Title = "Technical Recruiter",
+                Description = "Join our HR team to help source top engineering talent.",
+                EmploymentType = "Full Time",
+                Location = "San Francisco, CA",
+                MinimumExperience = 2,
+                VacancyCount = 1,
+                ApplicationDeadline = DateTime.UtcNow.AddDays(15),
+                Status = TalentFlow.Domain.Enums.JobStatus.Draft
+            };
+            dbContext.Jobs.AddRange(job1, job2);
+            await dbContext.SaveChangesAsync();
+            logger.LogInformation("Seeded sample jobs.");
+            
+            // Seed Sample Users (Recruiter & Candidate)
+            if (await userManager.FindByEmailAsync("recruiter@technova.com") == null)
+            {
+                var recruiter = new ApplicationUser
+                {
+                    Email = "recruiter@technova.com",
+                    UserName = "recruiter@technova.com",
+                    FirstName = "Alice",
+                    LastName = "Recruiter",
+                    IsActive = true,
+                    EmailConfirmed = true
+                };
+                await userManager.CreateAsync(recruiter, "Recruiter@123");
+                await userManager.AddToRoleAsync(recruiter, "Recruiter");
+                
+                // Add Company Membership
+                dbContext.CompanyMemberships.Add(new CompanyMembership 
+                { 
+                    CompanyId = company.Id, 
+                    UserId = recruiter.Id, 
+                    Role = "Recruiter" 
+                });
+                await dbContext.SaveChangesAsync();
+            }
+
+            if (await userManager.FindByEmailAsync("candidate@example.com") == null)
+            {
+                var candidate = new ApplicationUser
+                {
+                    Email = "candidate@example.com",
+                    UserName = "candidate@example.com",
+                    FirstName = "Bob",
+                    LastName = "Applicant",
+                    IsActive = true,
+                    EmailConfirmed = true
+                };
+                await userManager.CreateAsync(candidate, "Candidate@123");
+                await userManager.AddToRoleAsync(candidate, "Candidate");
+                
+                // Add Candidate Profile
+                dbContext.CandidateProfiles.Add(new CandidateProfile
+                {
+                    UserId = candidate.Id,
+                    Summary = "Experienced software engineer looking for new challenges.",
+                    Phone = "+1 555-0100"
+                });
+                await dbContext.SaveChangesAsync();
+            }
+            logger.LogInformation("Seeded sample recruiter and candidate users.");
         }
     }
 }

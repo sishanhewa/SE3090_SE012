@@ -9,6 +9,47 @@ using TalentFlow.Application.Interfaces.Services;
 
 namespace TalentFlow.Api.Controllers;
 
+/// <summary>
+/// Flat route: GET /api/jobs (all jobs across companies).
+/// </summary>
+[ApiController]
+[Route("api/jobs")]
+[Authorize]
+public class AllJobsController : ControllerBase
+{
+    private readonly IJobService _jobService;
+
+    public AllJobsController(IJobService jobService)
+    {
+        _jobService = jobService;
+    }
+
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetAllJobs([FromQuery] PaginationParams paginationParams)
+    {
+        var result = await _jobService.GetJobsAsync(paginationParams);
+        if (!result.IsSuccess)
+            return BadRequest(result.Error);
+
+        return Ok(result.Data);
+    }
+
+    [HttpGet("{id}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetJob(Guid id)
+    {
+        var result = await _jobService.GetJobByIdAsync(id);
+        if (!result.IsSuccess)
+            return NotFound(result.Error);
+
+        return Ok(result.Data);
+    }
+}
+
+/// <summary>
+/// Company-scoped route: /api/companies/{companyId}/jobs
+/// </summary>
 [ApiController]
 [Route("api/companies/{companyId}/jobs")]
 [Authorize]
@@ -22,7 +63,7 @@ public class JobsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Coordinator")]
+    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter")]
     public async Task<IActionResult> CreateJob(Guid companyId, [FromBody] CreateJobRequest request)
     {
         var result = await _jobService.CreateJobAsync(request, companyId);
@@ -33,15 +74,13 @@ public class JobsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [AllowAnonymous] // Assuming jobs can be viewed publicly by candidates
+    [AllowAnonymous]
     public async Task<IActionResult> GetJob(Guid companyId, Guid id)
     {
         var result = await _jobService.GetJobByIdAsync(id);
         if (!result.IsSuccess)
             return NotFound(result.Error);
 
-        // Optional: Ensure job belongs to the companyId in route, though GetJobByIdAsync doesn't check it directly
-        // We trust the ID lookup for now.
         if (result.Data!.CompanyId != companyId)
             return NotFound();
 
@@ -60,7 +99,7 @@ public class JobsController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Coordinator")]
+    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter")]
     public async Task<IActionResult> UpdateJob(Guid companyId, Guid id, [FromBody] UpdateJobRequest request)
     {
         var result = await _jobService.UpdateJobAsync(id, request, companyId);
@@ -75,7 +114,7 @@ public class JobsController : ControllerBase
     }
 
     [HttpPost("{id}/publish")]
-    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Coordinator")]
+    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter")]
     public async Task<IActionResult> PublishJob(Guid companyId, Guid id)
     {
         var result = await _jobService.PublishJobAsync(id, companyId);
@@ -90,7 +129,7 @@ public class JobsController : ControllerBase
     }
 
     [HttpPost("{id}/close")]
-    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Coordinator")]
+    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter")]
     public async Task<IActionResult> CloseJob(Guid companyId, Guid id)
     {
         var result = await _jobService.CloseJobAsync(id, companyId);

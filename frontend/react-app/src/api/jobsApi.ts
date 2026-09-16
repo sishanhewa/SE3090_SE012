@@ -29,8 +29,8 @@ export interface CreateJobRequest {
 
 export const jobsApi = {
   getAll: async () => {
-    const response = await apiClient.get<JobResponse[]>('/jobs');
-    return response.data;
+    const response = await apiClient.get<PagedResult<JobResponse>>('/jobs');
+    return response.data.items;
   },
   getById: async (id: string) => {
     const response = await apiClient.get<JobResponse>(`/jobs/${id}`);

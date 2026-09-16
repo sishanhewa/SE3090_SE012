@@ -20,8 +20,8 @@ export interface CreateApplicationRequest {
 
 export const applicationsApi = {
   getAll: async () => {
-    const response = await apiClient.get<ApplicationResponse[]>('/applications');
-    return response.data;
+    const response = await apiClient.get<PagedResult<ApplicationResponse>>('/applications');
+    return response.data.items;
   },
   getById: async (id: string) => {
     const response = await apiClient.get<ApplicationResponse>(`/applications/${id}`);
