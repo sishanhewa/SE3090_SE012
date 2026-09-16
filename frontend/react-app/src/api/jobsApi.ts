@@ -36,20 +36,20 @@ export const jobsApi = {
     const response = await apiClient.get<JobResponse>(`/jobs/${id}`);
     return response.data;
   },
-  create: async (data: CreateJobRequest) => {
-    const response = await apiClient.post<JobResponse>('/jobs', data);
+  create: async (companyId: string, data: CreateJobRequest) => {
+    const response = await apiClient.post<JobResponse>(`/companies/${companyId}/jobs`, data);
     return response.data;
   },
-  update: async (id: string, data: Partial<CreateJobRequest>) => {
-    const response = await apiClient.put<JobResponse>(`/jobs/${id}`, data);
+  update: async (companyId: string, id: string, data: Partial<CreateJobRequest>) => {
+    const response = await apiClient.put<JobResponse>(`/companies/${companyId}/jobs/${id}`, data);
     return response.data;
   },
-  publish: async (id: string) => {
-    const response = await apiClient.post(`/jobs/${id}/publish`);
+  publish: async (companyId: string, id: string) => {
+    const response = await apiClient.post(`/companies/${companyId}/jobs/${id}/publish`);
     return response.data;
   },
-  close: async (id: string) => {
-    const response = await apiClient.post(`/jobs/${id}/close`);
+  close: async (companyId: string, id: string) => {
+    const response = await apiClient.post(`/companies/${companyId}/jobs/${id}/close`);
     return response.data;
   }
 };

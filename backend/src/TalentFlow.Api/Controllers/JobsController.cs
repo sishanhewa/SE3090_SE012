@@ -26,9 +26,9 @@ public class AllJobsController : ControllerBase
 
     [HttpGet]
     [AllowAnonymous]
-    public async Task<IActionResult> GetAllJobs([FromQuery] PaginationParams paginationParams)
+    public async Task<IActionResult> GetAllJobs([FromQuery] JobSearchParams searchParams)
     {
-        var result = await _jobService.GetJobsAsync(paginationParams);
+        var result = await _jobService.GetJobsAsync(searchParams);
         if (!result.IsSuccess)
             return BadRequest(result.Error);
 
@@ -89,13 +89,28 @@ public class JobsController : ControllerBase
 
     [HttpGet]
     [AllowAnonymous]
-    public async Task<IActionResult> GetJobs(Guid companyId, [FromQuery] PaginationParams paginationParams)
+    public async Task<IActionResult> GetJobs(Guid companyId, [FromQuery] JobSearchParams searchParams)
     {
-        var result = await _jobService.GetJobsAsync(paginationParams, companyId);
+        var result = await _jobService.GetJobsAsync(searchParams, companyId);
         if (!result.IsSuccess)
             return BadRequest(result.Error);
 
         return Ok(result.Data);
+    }
+
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter")]
+    public async Task<IActionResult> ArchiveJob(Guid companyId, Guid id)
+    {
+        var result = await _jobService.ArchiveJobAsync(id, companyId);
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
+            if (result.ErrorCode == "Forbidden") return Forbid();
+            return BadRequest(result.Error);
+        }
+
+        return NoContent();
     }
 
     [HttpPut("{id}")]

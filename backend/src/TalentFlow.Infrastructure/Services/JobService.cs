@@ -62,9 +62,9 @@ public class JobService : IJobService
         return Result<JobResponse>.Success(MapToResponse(job));
     }
 
-    public async Task<Result<PagedResult<JobResponse>>> GetJobsAsync(PaginationParams paginationParams, Guid? companyId = null, CancellationToken cancellationToken = default)
+    public async Task<Result<PagedResult<JobResponse>>> GetJobsAsync(JobSearchParams searchParams, Guid? companyId = null, CancellationToken cancellationToken = default)
     {
-        var result = await _jobRepository.GetJobsAsync(paginationParams, companyId, null, null, cancellationToken);
+        var result = await _jobRepository.GetJobsAsync(searchParams, companyId, cancellationToken);
         
         var response = new PagedResult<JobResponse>(
             result.Items.Select(MapToResponse).ToList(),
@@ -148,6 +148,24 @@ public class JobService : IJobService
             return Result.Failure("Only published jobs can be closed", "InvalidStateTransition");
 
         job.Status = JobStatus.Closed;
+        await _jobRepository.UpdateAsync(job, cancellationToken);
+
+        return Result.Success();
+    }
+
+    public async Task<Result> ArchiveJobAsync(Guid id, Guid companyId, CancellationToken cancellationToken = default)
+    {
+        var job = await _jobRepository.GetByIdAsync(id, cancellationToken);
+        if (job == null)
+            return Result.NotFound("Job not found");
+
+        if (job.CompanyId != companyId)
+            return Result.Forbidden();
+
+        if (job.Status != JobStatus.Closed)
+            return Result.Failure("Only closed jobs can be archived", "InvalidStateTransition");
+
+        job.Status = JobStatus.Archived;
         await _jobRepository.UpdateAsync(job, cancellationToken);
 
         return Result.Success();

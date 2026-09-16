@@ -14,10 +14,8 @@ public class JobRepository : Repository<Job>, IJobRepository
     }
 
     public async Task<PagedResult<Job>> GetJobsAsync(
-        PaginationParams paginationParams,
+        TalentFlow.Application.DTOs.Jobs.JobSearchParams searchParams,
         Guid? companyId = null,
-        JobStatus? status = null,
-        Guid? departmentId = null,
         CancellationToken cancellationToken = default)
     {
         var query = DbSet
@@ -28,37 +26,46 @@ public class JobRepository : Repository<Job>, IJobRepository
         if (companyId.HasValue)
             query = query.Where(j => j.CompanyId == companyId.Value);
 
-        if (status.HasValue)
-            query = query.Where(j => j.Status == status.Value);
+        if (searchParams.Status.HasValue)
+            query = query.Where(j => j.Status == searchParams.Status.Value);
 
-        if (departmentId.HasValue)
-            query = query.Where(j => j.DepartmentId == departmentId.Value);
-
-        if (!string.IsNullOrWhiteSpace(paginationParams.Search))
+        if (!string.IsNullOrWhiteSpace(searchParams.Department))
         {
-            var search = paginationParams.Search.ToLower();
+            var dept = searchParams.Department.ToLower();
+            query = query.Where(j => j.Department.Name.ToLower().Contains(dept));
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchParams.EmploymentType))
+        {
+            var empType = searchParams.EmploymentType.ToLower();
+            query = query.Where(j => j.EmploymentType.ToLower().Contains(empType));
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchParams.Search))
+        {
+            var search = searchParams.Search.ToLower();
             query = query.Where(j =>
                 j.Title.ToLower().Contains(search) ||
                 j.Description.ToLower().Contains(search));
         }
 
         // Sorting
-        query = paginationParams.SortBy?.ToLower() switch
+        query = (searchParams.SortBy ?? searchParams.SortBy)?.ToLower() switch
         {
-            "title" => paginationParams.SortDescending ? query.OrderByDescending(j => j.Title) : query.OrderBy(j => j.Title),
-            "deadline" => paginationParams.SortDescending ? query.OrderByDescending(j => j.ApplicationDeadline) : query.OrderBy(j => j.ApplicationDeadline),
-            "created" => paginationParams.SortDescending ? query.OrderByDescending(j => j.CreatedAt) : query.OrderBy(j => j.CreatedAt),
+            "title" => searchParams.SortDescending ? query.OrderByDescending(j => j.Title) : query.OrderBy(j => j.Title),
+            "deadline" => searchParams.SortDescending ? query.OrderByDescending(j => j.ApplicationDeadline) : query.OrderBy(j => j.ApplicationDeadline),
+            "created" => searchParams.SortDescending ? query.OrderByDescending(j => j.CreatedAt) : query.OrderBy(j => j.CreatedAt),
             _ => query.OrderByDescending(j => j.CreatedAt)
         };
 
         var totalCount = await query.CountAsync(cancellationToken);
 
         var items = await query
-            .Skip((paginationParams.Page - 1) * paginationParams.PageSize)
-            .Take(paginationParams.PageSize)
+            .Skip((searchParams.Page - 1) * searchParams.PageSize)
+            .Take(searchParams.PageSize)
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<Job>(items, totalCount, paginationParams.Page, paginationParams.PageSize);
+        return new PagedResult<Job>(items, totalCount, searchParams.Page, searchParams.PageSize);
     }
 
     public async Task<Job?> GetJobWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
