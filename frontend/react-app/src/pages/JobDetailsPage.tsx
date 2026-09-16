@@ -34,9 +34,11 @@ export default function JobDetailsPage() {
   }, [id]);
 
   const handlePublish = async () => {
-    if (!id) return;
+    if (!id || !job?.companyId) return;
+    if (!window.confirm('Are you sure you want to publish this job? Once published, candidates will be able to apply.')) return;
+    
     try {
-      await jobsApi.publish(id);
+      await jobsApi.publish(job.companyId, id);
       fetchDetails();
     } catch (error) {
       console.error('Failed to publish job', error);
@@ -44,9 +46,11 @@ export default function JobDetailsPage() {
   };
 
   const handleClose = async () => {
-    if (!id) return;
+    if (!id || !job?.companyId) return;
+    if (!window.confirm('Are you sure you want to close this job? Candidates will no longer be able to apply.')) return;
+    
     try {
-      await jobsApi.close(id);
+      await jobsApi.close(job.companyId, id);
       fetchDetails();
     } catch (error) {
       console.error('Failed to close job', error);
@@ -91,15 +95,27 @@ export default function JobDetailsPage() {
         
         <div className="flex gap-2">
           {job.status === 'Draft' && (
-            <Button onClick={handlePublish} className="gap-2">
-              <CheckCircle2 className="h-4 w-4" /> Publish Job
-            </Button>
+            <>
+              <Link to={`/jobs/${job.id}/edit`}>
+                <Button variant="outline" className="gap-2">
+                  Edit Job
+                </Button>
+              </Link>
+              <Button onClick={handlePublish} className="gap-2">
+                <CheckCircle2 className="h-4 w-4" /> Publish Job
+              </Button>
+            </>
           )}
           {job.status === 'Published' && (
             <Button variant="destructive" onClick={handleClose} className="gap-2">
               <XCircle className="h-4 w-4" /> Close Job
             </Button>
           )}
+          <Link to={`/applications?jobId=${job.id}`}>
+            <Button variant="secondary" className="gap-2">
+              View Applications
+            </Button>
+          </Link>
         </div>
       </div>
 
