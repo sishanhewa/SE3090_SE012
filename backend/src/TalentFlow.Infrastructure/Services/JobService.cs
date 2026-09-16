@@ -112,6 +112,23 @@ public class JobService : IJobService
         if (job.Status != JobStatus.Draft && job.Status != JobStatus.Closed)
             return Result.Failure("Job is already published", "InvalidStateTransition");
 
+        // Business rules validation
+        if (string.IsNullOrWhiteSpace(job.Title))
+            return Result.Failure("Job title is required to publish.", "ValidationFailed");
+        
+        if (string.IsNullOrWhiteSpace(job.Description))
+            return Result.Failure("Job description is required to publish.", "ValidationFailed");
+
+        // Assuming Department is populated or checking DepartmentId if Department navigation is null
+        if (job.DepartmentId == Guid.Empty)
+            return Result.Failure("Department is required to publish.", "ValidationFailed");
+
+        if (job.VacancyCount <= 0)
+            return Result.Failure("Vacancy count must be greater than zero.", "ValidationFailed");
+
+        if (!job.ApplicationDeadline.HasValue || job.ApplicationDeadline.Value <= DateTime.UtcNow)
+            return Result.Failure("Application deadline must be in the future.", "ValidationFailed");
+
         job.Status = JobStatus.Published;
         await _jobRepository.UpdateAsync(job, cancellationToken);
 
