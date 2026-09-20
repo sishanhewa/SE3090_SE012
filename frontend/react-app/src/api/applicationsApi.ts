@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import type { JobResponse } from './jobsApi';
+import type { PagedResult } from './apiClient';
 
 export interface ApplicationResponse {
   id: string;

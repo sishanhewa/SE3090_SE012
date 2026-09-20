@@ -1,6 +1,11 @@
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { Briefcase, FileText, CalendarDays, Users, Building2, UserCircle } from 'lucide-react';
+import { Briefcase, FileText, CalendarDays, Users, UserCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { jobsApi } from '../api/jobsApi';
+import { applicationsApi } from '../api/applicationsApi';
+import { interviewsApi } from '../api/interviewsApi';
+import { employeesApi } from '../api/employeesApi';
 
 const staffCards = [
   { label: 'Active Jobs', icon: Briefcase, color: 'text-blue-600 bg-blue-50', to: '/jobs' },
@@ -20,7 +25,42 @@ export default function DashboardPage() {
   const isStaff = roles.some((r) => ['SystemAdmin', 'Recruiter', 'HiringManager'].includes(r));
   const isCandidate = roles.includes('Candidate');
 
-  const roleLabel = roles[0] ?? 'User';
+  const [stats, setStats] = useState({
+    jobs: 0,
+    applications: 0,
+    interviews: 0,
+    employees: 0,
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        if (isStaff) {
+          const [jobsData, appsData, interviewsData, employeesData] = await Promise.all([
+            jobsApi.getAll(),
+            applicationsApi.getAll(),
+            interviewsApi.getAll(),
+            employeesApi.getAll('company-1')
+          ]);
+          setStats({
+            jobs: jobsData.length,
+            applications: appsData.length,
+            interviews: interviewsData.length,
+            employees: employeesData.items ? employeesData.items.length : 0,
+          });
+        } else if (isCandidate) {
+          const appsData = await applicationsApi.getMine();
+          setStats({
+            ...stats,
+            applications: appsData.length,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard stats', error);
+      }
+    };
+    fetchStats();
+  }, [isStaff, isCandidate]);
 
   const cards = isStaff ? staffCards : isCandidate ? candidateCards : [];
 
@@ -42,6 +82,13 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {cards.map((card) => {
           const Icon = card.icon;
+          
+          let displayCount = '—';
+          if (card.label.includes('Jobs')) displayCount = stats.jobs.toString();
+          if (card.label.includes('Applications')) displayCount = stats.applications.toString();
+          if (card.label.includes('Interviews')) displayCount = stats.interviews.toString();
+          if (card.label.includes('Employees')) displayCount = stats.employees.toString();
+
           return (
             <Link
               key={card.label}
@@ -52,7 +99,7 @@ export default function DashboardPage() {
                 <Icon className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">—</p>
+                <p className="text-2xl font-bold text-foreground">{displayCount}</p>
                 <p className="text-sm text-muted-foreground">{card.label}</p>
               </div>
             </Link>

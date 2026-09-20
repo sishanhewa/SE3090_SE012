@@ -51,7 +51,7 @@ export default function JobsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await jobsApi.create(formData);
+      await jobsApi.create('company-1', formData);
       setIsModalOpen(false);
       setFormData({ 
         companyId: '', title: '', description: '', department: '', 

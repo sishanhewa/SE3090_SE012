@@ -22,7 +22,7 @@ export default function OnboardingPage() {
     try {
       const data = await employeesApi.getAll('company-1');
       // Filter only employees in Onboarding status
-      setEmployees(data.items.filter(e => e.status === 'Onboarding'));
+      setEmployees(data.items.filter((e: EmployeeResponse) => e.status === 'Onboarding'));
     } catch (error) {
       console.error('Failed to fetch employees', error);
     } finally {

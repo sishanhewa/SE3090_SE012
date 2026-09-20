@@ -21,7 +21,6 @@ import EmployeeDetailsPage from './pages/EmployeeDetailsPage';
 import OnboardingPage from './pages/OnboardingPage';
 
 const STAFF = ['SystemAdmin', 'Recruiter', 'HiringManager'];
-const ALL_ROLES = ['SystemAdmin', 'Recruiter', 'HiringManager', 'Candidate', 'Employee'];
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();

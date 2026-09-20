@@ -22,7 +22,7 @@ export default function CompanyDetailsPage() {
           jobsApi.getAll()
         ]);
         setCompany(companyData);
-        setJobs(allJobs.filter(j => j.companyId === id));
+        setJobs(allJobs.filter((j: any) => j.companyId === id));
       } catch (error) {
         console.error('Failed to fetch company details', error);
       } finally {
