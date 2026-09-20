@@ -11,6 +11,7 @@ import JobsPage from './pages/JobsPage';
 import JobDetailsPage from './pages/JobDetailsPage';
 import EditJobPage from './pages/EditJobPage';
 import ApplicationsPage from './pages/ApplicationsPage';
+import ApplicationDetailsPage from './pages/ApplicationDetailsPage';
 import CandidateProfilePage from './pages/CandidateProfilePage';
 import InterviewsPage from './pages/InterviewsPage';
 import EmployeesPage from './pages/EmployeesPage';
@@ -54,6 +55,7 @@ export default function App() {
 
         {/* Applications — Staff + Candidates */}
         <Route path="applications" element={<RoleGuard allowedRoles={[...STAFF, 'Candidate']}><ApplicationsPage /></RoleGuard>} />
+        <Route path="applications/:id" element={<RoleGuard allowedRoles={[...STAFF, 'Candidate']}><ApplicationDetailsPage /></RoleGuard>} />
 
         {/* Profile — Candidates only */}
         <Route path="profile" element={<RoleGuard allowedRoles={['Candidate']}><CandidateProfilePage /></RoleGuard>} />
