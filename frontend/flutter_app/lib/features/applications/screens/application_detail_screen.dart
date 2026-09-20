@@ -16,11 +16,7 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
   Map<String, dynamic>? _application;
   bool _isLoading = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchApplicationDetails();
-  }
+
 
   Future<void> _fetchApplicationDetails() async {
     try {
@@ -63,6 +59,51 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
         _fetchApplicationDetails();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to withdraw application')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Network error')));
+    }
+  }
+
+  Map<String, dynamic>? _offer;
+  bool _isLoadingOffer = false;
+
+  Future<void> _fetchOffer() async {
+    if (_application?['status'] != 'Offered' && _application?['status'] != 'Hired') return;
+    
+    setState(() => _isLoadingOffer = true);
+    try {
+      final response = await _apiClient.get('/offers?applicationId=${widget.applicationId}');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['items'] != null && data['items'].isNotEmpty) {
+          setState(() {
+            _offer = data['items'][0];
+          });
+        }
+      }
+    } catch (e) {
+      // Ignore
+    } finally {
+      setState(() => _isLoadingOffer = false);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchApplicationDetails().then((_) => _fetchOffer());
+  }
+
+  Future<void> _updateOfferStatus(String status) async {
+    if (_offer == null) return;
+    try {
+      final response = await _apiClient.patch('/offers/${_offer!['id']}/status', jsonEncode({'status': status}));
+      if (response.statusCode == 204 || response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Offer $status successfully!')));
+        _fetchApplicationDetails().then((_) => _fetchOffer());
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update offer status')));
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Network error')));
@@ -124,6 +165,61 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                 ),
               ),
             ),
+            
+            if (_offer != null && (_offer!['status'] == 'Sent' || _offer!['status'] == 'Accepted' || _offer!['status'] == 'Rejected')) ...[
+              const SizedBox(height: 24),
+              const Text(
+                'Job Offer',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue),
+              ),
+              const SizedBox(height: 8),
+              Card(
+                color: Colors.blue.shade50,
+                margin: EdgeInsets.zero,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Position: ${_offer!['position']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Text('Salary: \$${_offer!['salary']}'),
+                      const SizedBox(height: 8),
+                      Text('Start Date: ${DateTime.parse(_offer!['startDate']).toLocal().toString().split(' ')[0]}'),
+                      const SizedBox(height: 8),
+                      Text('Status: ${_offer!['status']}'),
+                      if (_offer!['additionalTerms'] != null) ...[
+                        const SizedBox(height: 8),
+                        Text('Terms: ${_offer!['additionalTerms']}'),
+                      ],
+                      if (_offer!['status'] == 'Sent') ...[
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                                onPressed: () => _updateOfferStatus('Accepted'),
+                                child: const Text('Accept Offer', style: TextStyle(color: Colors.white)),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                onPressed: () => _updateOfferStatus('Rejected'),
+                                child: const Text('Reject', style: TextStyle(color: Colors.white)),
+                              ),
+                            ),
+                          ],
+                        )
+                      ]
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 24),
             const Text(
               'Cover Letter',
@@ -158,3 +254,4 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
     );
   }
 }
+

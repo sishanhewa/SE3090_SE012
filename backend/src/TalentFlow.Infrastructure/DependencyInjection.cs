@@ -50,11 +50,13 @@ public static class DependencyInjection
         services.AddScoped<IInterviewRepository, InterviewRepository>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<ICompanyRepository, CompanyRepository>();
+        services.AddScoped<IOfferRepository, OfferRepository>();
         services.AddScoped<ICompanyService, CompanyService>();
         services.AddScoped<IJobService, JobService>();
         services.AddScoped<IApplicationService, ApplicationService>();
         services.AddScoped<ICandidateProfileService, CandidateProfileService>();
         services.AddScoped<IInterviewService, InterviewService>();
+        services.AddScoped<IOfferService, OfferService>();
         services.AddScoped<IEmployeeService, EmployeeService>();
 
         return services;
