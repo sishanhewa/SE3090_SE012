@@ -3,42 +3,41 @@ import apiClient from './apiClient';
 export interface EmployeeResponse {
   id: string;
   userId: string;
+  name: string;
   companyId: string;
-  department: string;
+  departmentId: string;
+  employeeNumber: string;
   position: string;
   startDate: string;
   status: string;
-  salary: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateEmployeeRequest {
   userId: string;
-  companyId: string;
-  department: string;
+  departmentId: string;
+  employeeNumber: string;
   position: string;
   startDate: string;
-  salary: number;
+  applicationId?: string;
 }
 
 export const employeesApi = {
-  getAll: async () => {
-    const response = await apiClient.get<PagedResult<EmployeeResponse>>('/employees');
-    return response.data.items;
-  },
-  getById: async (id: string) => {
-    const response = await apiClient.get<EmployeeResponse>(`/employees/${id}`);
+  getAll: async (companyId: string) => {
+    const response = await apiClient.get<PagedResult<EmployeeResponse>>(`/companies/${companyId}/employees`);
     return response.data;
   },
-  create: async (data: CreateEmployeeRequest) => {
-    const response = await apiClient.post<EmployeeResponse>('/employees', data);
+  getById: async (id: string, companyId: string) => {
+    const response = await apiClient.get<EmployeeResponse>(`/companies/${companyId}/employees/${id}`);
     return response.data;
   },
-  update: async (id: string, data: Partial<CreateEmployeeRequest>) => {
-    const response = await apiClient.put<EmployeeResponse>(`/employees/${id}`, data);
+  create: async (companyId: string, data: CreateEmployeeRequest) => {
+    const response = await apiClient.post<EmployeeResponse>(`/companies/${companyId}/employees`, data);
     return response.data;
   },
-  terminate: async (id: string) => {
-    const response = await apiClient.post(`/employees/${id}/terminate`);
+  update: async (id: string, companyId: string, data: any) => {
+    const response = await apiClient.put<EmployeeResponse>(`/companies/${companyId}/employees/${id}`, data);
     return response.data;
   }
 };

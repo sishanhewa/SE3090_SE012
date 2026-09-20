@@ -18,6 +18,7 @@ import InterviewDetailsPage from './pages/InterviewDetailsPage';
 import OffersPage from './pages/OffersPage';
 import EmployeesPage from './pages/EmployeesPage';
 import EmployeeDetailsPage from './pages/EmployeeDetailsPage';
+import OnboardingPage from './pages/OnboardingPage';
 
 const STAFF = ['SystemAdmin', 'Recruiter', 'HiringManager'];
 const ALL_ROLES = ['SystemAdmin', 'Recruiter', 'HiringManager', 'Candidate', 'Employee'];
@@ -69,7 +70,8 @@ export default function App() {
         {/* Offers — Staff only */}
         <Route path="offers" element={<RoleGuard allowedRoles={STAFF}><OffersPage /></RoleGuard>} />
 
-        {/* Employees — Staff only */}
+        {/* Employees & Onboarding — Staff only */}
+        <Route path="onboarding" element={<RoleGuard allowedRoles={STAFF}><OnboardingPage /></RoleGuard>} />
         <Route path="employees" element={<RoleGuard allowedRoles={STAFF}><EmployeesPage /></RoleGuard>} />
         <Route path="employees/:id" element={<RoleGuard allowedRoles={STAFF}><EmployeeDetailsPage /></RoleGuard>} />
 

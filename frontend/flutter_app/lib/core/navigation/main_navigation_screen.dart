@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../features/jobs/screens/job_list_screen.dart';
 import '../../features/applications/screens/my_applications_screen.dart';
 import '../../features/profile/screens/candidate_profile_screen.dart';
+import '../../features/onboarding/screens/onboarding_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({Key? key}) : super(key: key);
@@ -17,6 +18,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const JobListScreen(),
     const MyApplicationsScreen(),
     const CandidateProfileScreen(),
+    const OnboardingScreen(),
   ];
 
   @override
@@ -48,6 +50,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),
             label: 'Profile',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.rocket_launch_outlined),
+            selectedIcon: Icon(Icons.rocket_launch),
+            label: 'Onboarding',
           ),
         ],
       ),

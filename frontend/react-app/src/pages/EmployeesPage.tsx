@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { employeesApi, type EmployeeResponse, type CreateEmployeeRequest } from '../api/employeesApi';
-import { companiesApi, type CompanyResponse } from '../api/companiesApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -12,29 +11,23 @@ import { Link } from 'react-router-dom';
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<EmployeeResponse[]>([]);
-  const [companies, setCompanies] = useState<CompanyResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const [formData, setFormData] = useState<CreateEmployeeRequest>({
     userId: '',
-    companyId: '',
-    department: '',
+    departmentId: '00000000-0000-0000-0000-000000000000', // Default / fallback
+    employeeNumber: '',
     position: '',
     startDate: '',
-    salary: 0,
   });
 
   const fetchData = async () => {
     try {
-      const [employeesData, companiesData] = await Promise.all([
-        employeesApi.getAll(),
-        companiesApi.getAll()
-      ]);
-      setEmployees(employeesData);
-      setCompanies(companiesData);
+      const data = await employeesApi.getAll('company-1');
+      setEmployees(data.items);
     } catch (error) {
-      console.error('Failed to fetch data', error);
+      console.error('Failed to fetch employees', error);
     } finally {
       setLoading(false);
     }
@@ -47,14 +40,14 @@ export default function EmployeesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await employeesApi.create({
+      await employeesApi.create('company-1', {
         ...formData,
         startDate: new Date(formData.startDate).toISOString()
       });
       setIsModalOpen(false);
       setFormData({ 
-        userId: '', companyId: '', department: '', 
-        position: '', startDate: '', salary: 0 
+        userId: '', departmentId: '00000000-0000-0000-0000-000000000000', employeeNumber: '',
+        position: '', startDate: '' 
       });
       fetchData();
     } catch (error) {
@@ -83,24 +76,21 @@ export default function EmployeesPage() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
-                placeholder="User ID"
+                placeholder="User ID (Guid)"
                 value={formData.userId}
                 onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
                 required
               />
-              <select 
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={formData.companyId}
-                onChange={(e) => setFormData({ ...formData, companyId: e.target.value })}
-                required
-              >
-                <option value="" disabled>Select Company</option>
-                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
               <Input
-                placeholder="Department"
-                value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                placeholder="Employee Number (e.g. EMP-001)"
+                value={formData.employeeNumber}
+                onChange={(e) => setFormData({ ...formData, employeeNumber: e.target.value })}
+                required
+              />
+              <Input
+                placeholder="Department ID (Guid)"
+                value={formData.departmentId}
+                onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
                 required
               />
               <Input
@@ -114,13 +104,6 @@ export default function EmployeesPage() {
                 placeholder="Start Date"
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                required
-              />
-              <Input
-                type="number"
-                placeholder="Annual Salary"
-                value={formData.salary || ''}
-                onChange={(e) => setFormData({ ...formData, salary: Number(e.target.value) })}
                 required
               />
               <Button type="submit" className="w-full">Add Employee</Button>
@@ -148,9 +131,9 @@ export default function EmployeesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>User ID</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Employee Number</TableHead>
                   <TableHead>Position</TableHead>
-                  <TableHead>Department</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -158,11 +141,11 @@ export default function EmployeesPage() {
               <TableBody>
                 {employees.map((employee) => (
                   <TableRow key={employee.id}>
-                    <TableCell className="font-medium">{employee.userId}</TableCell>
+                    <TableCell className="font-medium">{employee.name || employee.userId}</TableCell>
+                    <TableCell>{employee.employeeNumber}</TableCell>
                     <TableCell>{employee.position}</TableCell>
-                    <TableCell>{employee.department}</TableCell>
                     <TableCell>
-                      <Badge variant={employee.status === 'Active' ? 'default' : 'secondary'}>
+                      <Badge variant={employee.status === 'Active' ? 'default' : employee.status === 'Onboarding' ? 'secondary' : 'outline'}>
                         {employee.status}
                       </Badge>
                     </TableCell>

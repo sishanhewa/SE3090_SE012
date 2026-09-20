@@ -4,7 +4,7 @@ import { employeesApi, type EmployeeResponse } from '../api/employeesApi';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, User, Briefcase, Calendar, DollarSign, Building2, UserMinus } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, Calendar, Building2, UserMinus } from 'lucide-react';
 
 export default function EmployeeDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -14,7 +14,7 @@ export default function EmployeeDetailsPage() {
   const fetchDetails = async () => {
     if (!id) return;
     try {
-      const data = await employeesApi.getById(id);
+      const data = await employeesApi.getById(id, 'company-1');
       setEmployee(data);
     } catch (error) {
       console.error('Failed to fetch employee details', error);
@@ -30,7 +30,7 @@ export default function EmployeeDetailsPage() {
   const handleTerminate = async () => {
     if (!id || !window.confirm('Are you sure you want to terminate this employee?')) return;
     try {
-      await employeesApi.terminate(id);
+      await employeesApi.update(id, 'company-1', { status: 'Terminated' });
       fetchDetails();
     } catch (error) {
       console.error('Failed to terminate employee', error);
@@ -60,9 +60,9 @@ export default function EmployeeDetailsPage() {
             <User className="h-8 w-8 text-primary" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">{employee.userId}</h2>
+            <h2 className="text-3xl font-bold tracking-tight">{employee.name}</h2>
             <div className="flex items-center gap-3 mt-2">
-              <Badge variant={employee.status === 'Active' ? 'default' : 'destructive'}>
+              <Badge variant={employee.status === 'Active' ? 'default' : employee.status === 'Onboarding' ? 'secondary' : 'destructive'}>
                 {employee.status}
               </Badge>
               <span className="text-muted-foreground text-sm flex items-center gap-1">
@@ -90,8 +90,8 @@ export default function EmployeeDetailsPage() {
                 <Building2 className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium">Department</p>
-                <p className="text-sm text-muted-foreground">{employee.department}</p>
+                <p className="text-sm font-medium">Employee Number</p>
+                <p className="text-sm text-muted-foreground">{employee.employeeNumber}</p>
               </div>
             </div>
             
@@ -102,16 +102,6 @@ export default function EmployeeDetailsPage() {
               <div>
                 <p className="text-sm font-medium">Start Date</p>
                 <p className="text-sm text-muted-foreground">{new Date(employee.startDate).toLocaleDateString()}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Annual Salary</p>
-                <p className="text-sm text-muted-foreground">${employee.salary.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
