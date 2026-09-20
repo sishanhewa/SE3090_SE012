@@ -1,4 +1,5 @@
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -77,6 +78,45 @@ public class InterviewsController : ControllerBase
         {
             if (result.ErrorCode == "NOT_FOUND") return NotFound(result.Error);
             if (result.ErrorCode == "InvalidStateTransition") return BadRequest(result.Error);
+            return BadRequest(result.Error);
+        }
+
+        return NoContent();
+    }
+
+    public class UpdateInterviewStatusRequest
+    {
+        public TalentFlow.Domain.Enums.InterviewStatus Status { get; set; }
+    }
+
+    [HttpPatch("{id}/status")]
+    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter,HiringManager")]
+    public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateInterviewStatusRequest request)
+    {
+        var result = await _interviewService.UpdateStatusAsync(id, request.Status);
+        
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
+            return BadRequest(result.Error);
+        }
+
+        return NoContent();
+    }
+
+    [HttpPost("{id}/feedback")]
+    [Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter,HiringManager")] // Evaluators
+    public async Task<IActionResult> AddFeedback(Guid id, [FromBody] AddInterviewFeedbackRequest request)
+    {
+        var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var userGuid))
+            return Unauthorized();
+
+        var result = await _interviewService.AddFeedbackAsync(id, userGuid, request);
+        
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
             return BadRequest(result.Error);
         }
 

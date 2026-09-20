@@ -11,4 +11,6 @@ public interface IInterviewService
     Task<Result<PagedResult<InterviewResponse>>> GetInterviewsByApplicationAsync(Guid applicationId, PaginationParams paginationParams, CancellationToken cancellationToken = default);
     Task<Result<InterviewResponse>> UpdateInterviewAsync(Guid id, UpdateInterviewRequest request, CancellationToken cancellationToken = default);
     Task<Result> CancelInterviewAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Result> UpdateStatusAsync(Guid id, TalentFlow.Domain.Enums.InterviewStatus status, CancellationToken cancellationToken = default);
+    Task<Result> AddFeedbackAsync(Guid id, Guid reviewerId, AddInterviewFeedbackRequest request, CancellationToken cancellationToken = default);
 }

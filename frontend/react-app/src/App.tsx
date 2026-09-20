@@ -14,6 +14,7 @@ import ApplicationsPage from './pages/ApplicationsPage';
 import ApplicationDetailsPage from './pages/ApplicationDetailsPage';
 import CandidateProfilePage from './pages/CandidateProfilePage';
 import InterviewsPage from './pages/InterviewsPage';
+import InterviewDetailsPage from './pages/InterviewDetailsPage';
 import EmployeesPage from './pages/EmployeesPage';
 import EmployeeDetailsPage from './pages/EmployeeDetailsPage';
 
@@ -60,8 +61,9 @@ export default function App() {
         {/* Profile — Candidates only */}
         <Route path="profile" element={<RoleGuard allowedRoles={['Candidate']}><CandidateProfilePage /></RoleGuard>} />
 
-        {/* Interviews — Staff only */}
+        {/* Interviews */}
         <Route path="interviews" element={<RoleGuard allowedRoles={STAFF}><InterviewsPage /></RoleGuard>} />
+        <Route path="interviews/:id" element={<RoleGuard allowedRoles={STAFF}><InterviewDetailsPage /></RoleGuard>} />
 
         {/* Offers — Staff only */}
         <Route path="offers" element={<RoleGuard allowedRoles={STAFF}><div className="p-8"><h2 className="text-3xl font-bold">Offers</h2><p className="text-muted-foreground mt-2">Coming in Sprint 2 — Phase 4</p></div></RoleGuard>} />

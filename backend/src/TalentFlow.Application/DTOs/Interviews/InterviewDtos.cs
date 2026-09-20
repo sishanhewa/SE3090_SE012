@@ -40,4 +40,24 @@ public class InterviewResponse
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public List<InterviewFeedbackResponse> Feedbacks { get; set; } = new();
+}
+
+public class AddInterviewFeedbackRequest
+{
+    public int TechnicalScore { get; set; }
+    public int CommunicationScore { get; set; }
+    public int ExperienceScore { get; set; }
+    public string? Comments { get; set; }
+    public string Recommendation { get; set; } = string.Empty;
+}
+
+public class InterviewFeedbackResponse
+{
+    public Guid Id { get; set; }
+    public string ReviewerName { get; set; } = string.Empty;
+    public int OverallScore { get; set; }
+    public string? Recommendation { get; set; }
+    public string? Comments { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
