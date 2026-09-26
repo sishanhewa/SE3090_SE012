@@ -51,6 +51,8 @@ public static class DependencyInjection
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<ICompanyRepository, CompanyRepository>();
         services.AddScoped<IOfferRepository, OfferRepository>();
+
+        // Register domain services
         services.AddScoped<ICompanyService, CompanyService>();
         services.AddScoped<IJobService, JobService>();
         services.AddScoped<IApplicationService, ApplicationService>();
@@ -58,6 +60,12 @@ public static class DependencyInjection
         services.AddScoped<IInterviewService, InterviewService>();
         services.AddScoped<IOfferService, OfferService>();
         services.AddScoped<IEmployeeService, EmployeeService>();
+
+        // Register Sprint 3 services
+        services.AddScoped<IOnboardingService, OnboardingService>();
+        services.AddScoped<ICandidateScoringService, CandidateScoringService>();
+        services.AddScoped<ISchedulingService, SchedulingService>();
+        services.AddScoped<IWorkflowService, WorkflowService>();
 
         return services;
     }
