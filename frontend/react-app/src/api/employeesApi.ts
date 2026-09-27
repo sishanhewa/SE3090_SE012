@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import type { PagedResult } from './apiClient';
 
 export interface EmployeeResponse {
   id: string;
