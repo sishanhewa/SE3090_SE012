@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { interviewsApi, type InterviewResponse, type ScheduleInterviewRequest } from '../api/interviewsApi';
 import { applicationsApi, type ApplicationResponse } from '../api/applicationsApi';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { CalendarDays, Plus, Video, CheckCircle, XCircle } from 'lucide-react';
 
 export default function InterviewsPage() {
+  const navigate = useNavigate();
   const [interviews, setInterviews] = useState<InterviewResponse[]>([]);
   const [applications, setApplications] = useState<ApplicationResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,11 +19,11 @@ export default function InterviewsPage() {
   
   const [formData, setFormData] = useState<ScheduleInterviewRequest>({
     applicationId: '',
-    interviewerId: 'user-123', // Hardcoded for demo
-    interviewDate: '',
+    scheduledAt: '',
     durationMinutes: 60,
-    interviewType: 'Technical',
-    meetingLink: ''
+    meetingUrl: '',
+    location: '',
+    notes: ''
   });
 
   const fetchData = async () => {
@@ -48,25 +50,37 @@ export default function InterviewsPage() {
     try {
       await interviewsApi.schedule({
         ...formData,
-        interviewDate: new Date(formData.interviewDate).toISOString()
+        scheduledAt: new Date(formData.scheduledAt).toISOString()
       });
       setIsModalOpen(false);
       setFormData({ 
-        applicationId: '', interviewerId: 'user-123', interviewDate: '', 
-        durationMinutes: 60, interviewType: 'Technical', meetingLink: '' 
+        applicationId: '', scheduledAt: '', durationMinutes: 60, meetingUrl: '', location: '', notes: '' 
       });
       fetchData();
     } catch (error) {
       console.error('Failed to schedule interview', error);
+      alert('Failed to schedule interview.');
     }
   };
 
-  const handleUpdateStatus = async (id: string, status: string) => {
+  const handleUpdateStatus = async (e: React.MouseEvent, id: string, status: string) => {
+    e.stopPropagation();
     try {
       await interviewsApi.updateStatus(id, status);
       fetchData();
     } catch (error) {
       console.error('Failed to update status', error);
+    }
+  };
+
+  const handleCancel = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!window.confirm('Cancel this interview?')) return;
+    try {
+      await interviewsApi.cancel(id);
+      fetchData();
+    } catch (error) {
+      console.error('Failed to cancel', error);
     }
   };
 
@@ -97,46 +111,40 @@ export default function InterviewsPage() {
                 required
               >
                 <option value="" disabled>Select Application</option>
-                {applications.map(app => (
+                {applications.filter(a => a.status === 'Shortlisted' || a.status === 'Interview').map(app => (
                   <option key={app.id} value={app.id}>
-                    {app.job?.title || 'Job Application'} - {app.candidateId}
+                    {app.jobTitle} - {app.candidateName} ({app.status})
                   </option>
                 ))}
               </select>
               
               <Input
                 type="datetime-local"
-                value={formData.interviewDate}
-                onChange={(e) => setFormData({ ...formData, interviewDate: e.target.value })}
+                value={formData.scheduledAt}
+                onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
                 required
               />
               
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  type="number"
-                  placeholder="Duration (mins)"
-                  value={formData.durationMinutes}
-                  onChange={(e) => setFormData({ ...formData, durationMinutes: Number(e.target.value) })}
-                  required
-                />
-                <select 
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={formData.interviewType}
-                  onChange={(e) => setFormData({ ...formData, interviewType: e.target.value })}
-                  required
-                >
-                  <option value="Technical">Technical</option>
-                  <option value="HR">HR</option>
-                  <option value="Managerial">Managerial</option>
-                  <option value="Culture Fit">Culture Fit</option>
-                </select>
-              </div>
+              <Input
+                type="number"
+                placeholder="Duration (mins)"
+                value={formData.durationMinutes}
+                onChange={(e) => setFormData({ ...formData, durationMinutes: Number(e.target.value) })}
+                required
+              />
 
               <Input
                 placeholder="Meeting Link (Optional)"
                 type="url"
-                value={formData.meetingLink}
-                onChange={(e) => setFormData({ ...formData, meetingLink: e.target.value })}
+                value={formData.meetingUrl}
+                onChange={(e) => setFormData({ ...formData, meetingUrl: e.target.value })}
+              />
+
+              <Input
+                placeholder="Location (Optional)"
+                type="text"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
               />
               
               <Button type="submit" className="w-full">Schedule Interview</Button>
@@ -165,7 +173,6 @@ export default function InterviewsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Date & Time</TableHead>
-                  <TableHead>Type</TableHead>
                   <TableHead>Duration</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -173,11 +180,14 @@ export default function InterviewsPage() {
               </TableHeader>
               <TableBody>
                 {interviews.map((interview) => (
-                  <TableRow key={interview.id}>
+                  <TableRow 
+                    key={interview.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate(`/interviews/${interview.id}`)}
+                  >
                     <TableCell className="font-medium">
-                      {new Date(interview.interviewDate).toLocaleString()}
+                      {new Date(interview.scheduledAt).toLocaleString()}
                     </TableCell>
-                    <TableCell>{interview.interviewType}</TableCell>
                     <TableCell>{interview.durationMinutes} mins</TableCell>
                     <TableCell>
                       <Badge variant={
@@ -188,19 +198,29 @@ export default function InterviewsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right space-x-2">
-                      {interview.meetingLink && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={interview.meetingLink} target="_blank" rel="noreferrer">
+                      {interview.meetingUrl && (
+                        <Button variant="outline" size="sm" onClick={e => e.stopPropagation()} asChild>
+                          <a href={interview.meetingUrl} target="_blank" rel="noreferrer">
                             <Video className="h-4 w-4 mr-2" /> Join
                           </a>
                         </Button>
                       )}
+                      {interview.status === 'Proposed' && (
+                        <>
+                          <Button variant="ghost" size="sm" onClick={(e) => handleUpdateStatus(e, interview.id, 'Scheduled')}>
+                            <CheckCircle className="h-4 w-4 text-blue-500" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={(e) => handleCancel(e, interview.id)}>
+                            <XCircle className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </>
+                      )}
                       {interview.status === 'Scheduled' && (
                         <>
-                          <Button variant="ghost" size="sm" onClick={() => handleUpdateStatus(interview.id, 'Completed')}>
+                          <Button variant="ghost" size="sm" onClick={(e) => handleUpdateStatus(e, interview.id, 'Completed')}>
                             <CheckCircle className="h-4 w-4 text-green-500" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleUpdateStatus(interview.id, 'Cancelled')}>
+                          <Button variant="ghost" size="sm" onClick={(e) => handleCancel(e, interview.id)}>
                             <XCircle className="h-4 w-4 text-red-500" />
                           </Button>
                         </>

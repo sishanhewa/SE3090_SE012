@@ -85,6 +85,67 @@ public class ApplicationService : IApplicationService
         return Result<PagedResult<ApplicationResponse>>.Success(response);
     }
 
+    public async Task<Result<PagedResult<ApplicationResponse>>> GetMyApplicationsAsync(Guid candidateProfileId, PaginationParams paginationParams, CancellationToken cancellationToken = default)
+    {
+        var result = await _applicationRepository.GetApplicationsAsync(paginationParams, null, candidateProfileId, null, cancellationToken);
+        
+        var response = new PagedResult<ApplicationResponse>(
+            result.Items.Select(MapToResponse).ToList(),
+            result.TotalCount,
+            result.Page,
+            result.PageSize
+        );
+
+        return Result<PagedResult<ApplicationResponse>>.Success(response);
+    }
+
+    public async Task<Result> UpdateApplicationStatusAsync(Guid id, ApplicationStatus newStatus, string changedBy, string? notes = null, CancellationToken cancellationToken = default)
+    {
+        var application = await _applicationRepository.GetByIdAsync(id, cancellationToken);
+        if (application == null)
+            return Result.NotFound("Application not found");
+
+        var oldStatus = application.Status;
+        if (oldStatus == newStatus)
+            return Result.Success(); // No change
+
+        // Validate state transition
+        bool isValidTransition = false;
+        switch (oldStatus)
+        {
+            case ApplicationStatus.Submitted:
+                isValidTransition = newStatus == ApplicationStatus.Screening;
+                break;
+            case ApplicationStatus.Screening:
+                isValidTransition = newStatus == ApplicationStatus.Shortlisted || newStatus == ApplicationStatus.Rejected;
+                break;
+            case ApplicationStatus.Shortlisted:
+                isValidTransition = newStatus == ApplicationStatus.Interview || newStatus == ApplicationStatus.Rejected;
+                break;
+            case ApplicationStatus.Interview:
+                isValidTransition = newStatus == ApplicationStatus.Offered || newStatus == ApplicationStatus.Rejected;
+                break;
+            case ApplicationStatus.Offered:
+                isValidTransition = newStatus == ApplicationStatus.Hired || newStatus == ApplicationStatus.Rejected;
+                break;
+        }
+
+        if (!isValidTransition)
+            return Result.Failure($"Invalid status transition from {oldStatus} to {newStatus}", "InvalidStateTransition");
+
+        application.Status = newStatus;
+        
+        application.History.Add(new ApplicationHistory
+        {
+            FromStatus = oldStatus,
+            ToStatus = newStatus,
+            Notes = notes ?? $"Status updated to {newStatus} by {changedBy}"
+        });
+
+        await _applicationRepository.UpdateAsync(application, cancellationToken);
+        return Result.Success();
+    }
+
     public async Task<Result> WithdrawApplicationAsync(Guid id, Guid candidateProfileId, CancellationToken cancellationToken = default)
     {
         var application = await _applicationRepository.GetByIdAsync(id, cancellationToken);

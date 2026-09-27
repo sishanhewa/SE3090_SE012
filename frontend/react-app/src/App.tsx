@@ -11,13 +11,16 @@ import JobsPage from './pages/JobsPage';
 import JobDetailsPage from './pages/JobDetailsPage';
 import EditJobPage from './pages/EditJobPage';
 import ApplicationsPage from './pages/ApplicationsPage';
+import ApplicationDetailsPage from './pages/ApplicationDetailsPage';
 import CandidateProfilePage from './pages/CandidateProfilePage';
 import InterviewsPage from './pages/InterviewsPage';
+import InterviewDetailsPage from './pages/InterviewDetailsPage';
+import OffersPage from './pages/OffersPage';
 import EmployeesPage from './pages/EmployeesPage';
 import EmployeeDetailsPage from './pages/EmployeeDetailsPage';
+import OnboardingPage from './pages/OnboardingPage';
 
 const STAFF = ['SystemAdmin', 'Recruiter', 'HiringManager'];
-const ALL_ROLES = ['SystemAdmin', 'Recruiter', 'HiringManager', 'Candidate', 'Employee'];
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -54,17 +57,20 @@ export default function App() {
 
         {/* Applications — Staff + Candidates */}
         <Route path="applications" element={<RoleGuard allowedRoles={[...STAFF, 'Candidate']}><ApplicationsPage /></RoleGuard>} />
+        <Route path="applications/:id" element={<RoleGuard allowedRoles={[...STAFF, 'Candidate']}><ApplicationDetailsPage /></RoleGuard>} />
 
         {/* Profile — Candidates only */}
         <Route path="profile" element={<RoleGuard allowedRoles={['Candidate']}><CandidateProfilePage /></RoleGuard>} />
 
-        {/* Interviews — Staff only */}
+        {/* Interviews */}
         <Route path="interviews" element={<RoleGuard allowedRoles={STAFF}><InterviewsPage /></RoleGuard>} />
+        <Route path="interviews/:id" element={<RoleGuard allowedRoles={STAFF}><InterviewDetailsPage /></RoleGuard>} />
 
         {/* Offers — Staff only */}
-        <Route path="offers" element={<RoleGuard allowedRoles={STAFF}><div className="p-8"><h2 className="text-3xl font-bold">Offers</h2><p className="text-muted-foreground mt-2">Coming in Sprint 2 — Phase 4</p></div></RoleGuard>} />
+        <Route path="offers" element={<RoleGuard allowedRoles={STAFF}><OffersPage /></RoleGuard>} />
 
-        {/* Employees — Staff only */}
+        {/* Employees & Onboarding — Staff only */}
+        <Route path="onboarding" element={<RoleGuard allowedRoles={STAFF}><OnboardingPage /></RoleGuard>} />
         <Route path="employees" element={<RoleGuard allowedRoles={STAFF}><EmployeesPage /></RoleGuard>} />
         <Route path="employees/:id" element={<RoleGuard allowedRoles={STAFF}><EmployeeDetailsPage /></RoleGuard>} />
 

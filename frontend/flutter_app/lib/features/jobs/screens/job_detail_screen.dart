@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
+import 'job_apply_screen.dart';
 
 class JobDetailScreen extends StatefulWidget {
   final String jobId;
@@ -104,11 +105,21 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
-            onPressed: () {
-              // TODO: Navigate to ApplyScreen (Sprint 2 - Phase 2)
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Apply functionality coming in Phase 2')),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => JobApplyScreen(
+                    jobId: widget.jobId,
+                    jobTitle: _job!['title'],
+                  ),
+                ),
               );
+              
+              if (result == true) {
+                // Application submitted, maybe pop back to job list or refresh
+                Navigator.pop(context);
+              }
             },
             child: const Text('Apply Now', style: TextStyle(fontSize: 16)),
           ),

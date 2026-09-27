@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'core/auth/auth_provider.dart';
 import 'features/auth/screens/login_screen.dart';
-import 'features/jobs/screens/job_list_screen.dart';
+import 'core/navigation/main_navigation_screen.dart';
 
 void main() {
   runApp(
@@ -32,7 +32,7 @@ class TalentFlowApp extends StatelessWidget {
         final isLoggingIn = state.uri.toString() == '/login';
 
         if (!isLoggedIn && !isLoggingIn) return '/login';
-        if (isLoggedIn && isLoggingIn) return '/jobs';
+        if (isLoggedIn && isLoggingIn) return '/home';
 
         return null;
       },
@@ -42,8 +42,8 @@ class TalentFlowApp extends StatelessWidget {
           builder: (context, state) => const LoginScreen(),
         ),
         GoRoute(
-          path: '/jobs',
-          builder: (context, state) => const JobListScreen(),
+          path: '/home',
+          builder: (context, state) => const MainNavigationScreen(),
         ),
       ],
     );
