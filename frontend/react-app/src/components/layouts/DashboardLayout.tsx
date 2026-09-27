@@ -12,6 +12,7 @@ import {
   LogOut,
   UserCircle,
   Shield,
+  Bot,
 } from 'lucide-react';
 
 // Each item declares which roles can see it.
@@ -42,6 +43,9 @@ const allNavItems = [
 
   // Onboarding — HR/Admin
   { to: '/onboarding', label: 'Onboarding', icon: Rocket, roles: ['SystemAdmin', 'Recruiter', 'HiringManager'] },
+
+  // AI Workflows — HR/Admin
+  { to: '/workflows', label: 'AI Workflows', icon: Bot, roles: ['SystemAdmin', 'Recruiter', 'HiringManager'] },
 ];
 
 const roleBadgeColors: Record<string, string> = {
