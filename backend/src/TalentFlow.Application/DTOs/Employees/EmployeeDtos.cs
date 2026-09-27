@@ -34,7 +34,7 @@ public class EmployeeResponse
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
-    public string Name { get; set; } = string.Empty; // Resolved from User
+    public string Name { get; set; } = string.Empty;
     public Guid CompanyId { get; set; }
     public Guid DepartmentId { get; set; }
     public string EmployeeNumber { get; set; } = string.Empty;

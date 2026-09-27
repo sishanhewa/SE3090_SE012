@@ -109,6 +109,52 @@ public class InterviewService : IInterviewService
         return Result.Success();
     }
 
+    public async Task<Result> UpdateStatusAsync(Guid id, InterviewStatus status, CancellationToken cancellationToken = default)
+    {
+        var interview = await _interviewRepository.GetByIdAsync(id, cancellationToken);
+        if (interview == null)
+            return Result.NotFound("Interview not found.");
+
+        interview.Status = status;
+        await _interviewRepository.UpdateAsync(interview, cancellationToken);
+
+        return Result.Success();
+    }
+
+    public async Task<Result> AddFeedbackAsync(Guid id, Guid reviewerId, AddInterviewFeedbackRequest request, CancellationToken cancellationToken = default)
+    {
+        var interview = await _interviewRepository.GetInterviewWithDetailsAsync(id, cancellationToken);
+        if (interview == null)
+            return Result.NotFound("Interview not found.");
+
+        var existingFeedback = interview.Feedback.FirstOrDefault(f => f.ReviewerId == reviewerId);
+        if (existingFeedback != null)
+        {
+            existingFeedback.TechnicalScore = request.TechnicalScore;
+            existingFeedback.CommunicationScore = request.CommunicationScore;
+            existingFeedback.ExperienceScore = request.ExperienceScore;
+            existingFeedback.OverallScore = (request.TechnicalScore + request.CommunicationScore + request.ExperienceScore) / 3;
+            existingFeedback.Comments = request.Comments;
+            existingFeedback.Recommendation = request.Recommendation;
+        }
+        else
+        {
+            interview.Feedback.Add(new InterviewFeedback
+            {
+                ReviewerId = reviewerId,
+                TechnicalScore = request.TechnicalScore,
+                CommunicationScore = request.CommunicationScore,
+                ExperienceScore = request.ExperienceScore,
+                OverallScore = (request.TechnicalScore + request.CommunicationScore + request.ExperienceScore) / 3,
+                Comments = request.Comments,
+                Recommendation = request.Recommendation
+            });
+        }
+
+        await _interviewRepository.UpdateAsync(interview, cancellationToken);
+        return Result.Success();
+    }
+
     private static InterviewResponse MapToResponse(Interview interview)
     {
         return new InterviewResponse
@@ -122,7 +168,16 @@ public class InterviewService : IInterviewService
             Location = interview.Location,
             Notes = interview.Notes,
             CreatedAt = interview.CreatedAt,
-            UpdatedAt = interview.UpdatedAt
+            UpdatedAt = interview.UpdatedAt,
+            Feedbacks = interview.Feedback.Select(f => new InterviewFeedbackResponse
+            {
+                Id = f.Id,
+                ReviewerName = f.Reviewer?.FirstName + " " + f.Reviewer?.LastName,
+                OverallScore = f.OverallScore,
+                Recommendation = f.Recommendation,
+                Comments = f.Comments,
+                CreatedAt = f.CreatedAt
+            }).ToList()
         };
     }
 }
