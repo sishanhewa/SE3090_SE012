@@ -8,6 +8,8 @@ using TalentFlow.Domain.Entities;
 using TalentFlow.Infrastructure.Persistence;
 using TalentFlow.Infrastructure.Repositories;
 using TalentFlow.Infrastructure.Services;
+using TalentFlow.Infrastructure.AI;
+using System;
 
 namespace TalentFlow.Infrastructure;
 
@@ -66,6 +68,12 @@ public static class DependencyInjection
         services.AddScoped<ICandidateScoringService, CandidateScoringService>();
         services.AddScoped<ISchedulingService, SchedulingService>();
         services.AddScoped<IWorkflowService, WorkflowService>();
+        
+        services.AddHttpClient<IAgentServiceClient, AgentServiceClient>(client =>
+        {
+            var aiServiceUrl = configuration.GetValue<string>("AIService:BaseUrl") ?? "http://localhost:8000";
+            client.BaseAddress = new Uri(aiServiceUrl);
+        });
 
         return services;
     }

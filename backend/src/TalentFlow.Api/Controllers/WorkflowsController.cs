@@ -42,9 +42,12 @@ public class WorkflowsController : ControllerBase
             serviceRequest, userId, companyId, cancellationToken);
 
         if (!result.IsSuccess)
-            return result.ToActionResult();
-
-        return Accepted(result.Data);
+        {
+            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
+            if (result.ErrorCode == "Forbidden") return Forbid();
+            return BadRequest(result.Error);
+        }
+        return Ok(result.Data);
     }
 
     /// <summary>
@@ -54,7 +57,13 @@ public class WorkflowsController : ControllerBase
     public async Task<IActionResult> GetWorkflow(Guid id, CancellationToken cancellationToken)
     {
         var result = await _workflowService.GetWorkflowAsync(id, cancellationToken);
-        return result.ToActionResult();
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
+            if (result.ErrorCode == "Forbidden") return Forbid();
+            return BadRequest(result.Error);
+        }
+        return Ok(result.Data);
     }
 
     /// <summary>
@@ -65,7 +74,13 @@ public class WorkflowsController : ControllerBase
     {
         var companyId = GetCompanyId();
         var result = await _workflowService.GetWorkflowsByCompanyAsync(companyId, cancellationToken);
-        return result.ToActionResult();
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
+            if (result.ErrorCode == "Forbidden") return Forbid();
+            return BadRequest(result.Error);
+        }
+        return Ok(result.Data);
     }
 
     /// <summary>
@@ -81,7 +96,13 @@ public class WorkflowsController : ControllerBase
         var userId = GetUserId();
         var result = await _workflowService.ApproveWorkflowAsync(
             id, userId, request.Comments, cancellationToken);
-        return result.ToActionResult();
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
+            if (result.ErrorCode == "Forbidden") return Forbid();
+            return BadRequest(result.Error);
+        }
+        return Ok(result.Data);
     }
 
     /// <summary>
@@ -97,7 +118,13 @@ public class WorkflowsController : ControllerBase
         var userId = GetUserId();
         var result = await _workflowService.RejectWorkflowAsync(
             id, userId, request.Comments, cancellationToken);
-        return result.ToActionResult();
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
+            if (result.ErrorCode == "Forbidden") return Forbid();
+            return BadRequest(result.Error);
+        }
+        return Ok(result.Data);
     }
 
     /// <summary>
@@ -116,7 +143,13 @@ public class WorkflowsController : ControllerBase
 
         var result = await _workflowService.RequestRevisionAsync(
             id, userId, request.Comments, cancellationToken);
-        return result.ToActionResult();
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
+            if (result.ErrorCode == "Forbidden") return Forbid();
+            return BadRequest(result.Error);
+        }
+        return Ok(result.Data);
     }
 
     private Guid GetUserId()
