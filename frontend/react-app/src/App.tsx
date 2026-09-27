@@ -19,6 +19,8 @@ import OffersPage from './pages/OffersPage';
 import EmployeesPage from './pages/EmployeesPage';
 import EmployeeDetailsPage from './pages/EmployeeDetailsPage';
 import OnboardingPage from './pages/OnboardingPage';
+import WorkflowsPage from './pages/WorkflowsPage';
+import WorkflowDetailsPage from './pages/WorkflowDetailsPage';
 
 const STAFF = ['SystemAdmin', 'Recruiter', 'HiringManager'];
 
@@ -74,8 +76,9 @@ export default function App() {
         <Route path="employees" element={<RoleGuard allowedRoles={STAFF}><EmployeesPage /></RoleGuard>} />
         <Route path="employees/:id" element={<RoleGuard allowedRoles={STAFF}><EmployeeDetailsPage /></RoleGuard>} />
 
-        {/* Onboarding — Staff only */}
-        <Route path="onboarding" element={<RoleGuard allowedRoles={STAFF}><div className="p-8"><h2 className="text-3xl font-bold">Onboarding</h2><p className="text-muted-foreground mt-2">Coming in Sprint 2 — Phase 5</p></div></RoleGuard>} />
+        {/* AI Workflows — Staff only */}
+        <Route path="workflows" element={<RoleGuard allowedRoles={STAFF}><WorkflowsPage /></RoleGuard>} />
+        <Route path="workflows/:id" element={<RoleGuard allowedRoles={STAFF}><WorkflowDetailsPage /></RoleGuard>} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
