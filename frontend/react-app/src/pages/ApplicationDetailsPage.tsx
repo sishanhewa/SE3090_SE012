@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { applicationsApi, type ApplicationResponse } from '../api/applicationsApi';
 import { useAuthStore } from '../store/authStore';
+import { workflowsApi } from '../api/workflowsApi';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +54,18 @@ export default function ApplicationDetailsPage() {
       fetchApplication();
     } catch (error) {
       console.error('Failed to withdraw application', error);
+    }
+  };
+
+  const handleRunAiScreening = async () => {
+    if (!application) return;
+    try {
+      await workflowsApi.startScreening(application.id, application.jobId);
+      alert('AI Screening workflow started successfully!');
+      fetchApplication();
+    } catch (error) {
+      console.error('Failed to start AI screening', error);
+      alert('Failed to start AI screening. It might already be running or the application is in an invalid state.');
     }
   };
 
@@ -133,8 +146,18 @@ export default function ApplicationDetailsPage() {
       <div className="flex gap-4 pt-4 border-t">
         {isStaff && application.status !== 'Hired' && application.status !== 'Rejected' && application.status !== 'Withdrawn' && (
           <>
-            {application.status === 'Submitted' && <Button onClick={() => handleUpdateStatus('Screening')}>Move to Screening</Button>}
-            {application.status === 'Screening' && <Button onClick={() => handleUpdateStatus('Shortlisted')}>Shortlist</Button>}
+            {application.status === 'Submitted' && (
+              <>
+                <Button onClick={() => handleUpdateStatus('Screening')}>Move to Screening (Manual)</Button>
+                <Button variant="default" className="bg-purple-600 hover:bg-purple-700" onClick={handleRunAiScreening}>Run AI Screening</Button>
+              </>
+            )}
+            {application.status === 'Screening' && (
+              <>
+                <Button onClick={() => handleUpdateStatus('Shortlisted')}>Shortlist</Button>
+                <Button variant="default" className="bg-purple-600 hover:bg-purple-700" onClick={handleRunAiScreening}>Run AI Screening</Button>
+              </>
+            )}
             {application.status === 'Shortlisted' && <Button onClick={() => handleUpdateStatus('Interview')}>Invite to Interview</Button>}
             {application.status === 'Interview' && <Button onClick={() => handleUpdateStatus('Offered')}>Extend Offer</Button>}
             {application.status === 'Offered' && <Button onClick={() => handleUpdateStatus('Hired')}>Mark as Hired</Button>}
