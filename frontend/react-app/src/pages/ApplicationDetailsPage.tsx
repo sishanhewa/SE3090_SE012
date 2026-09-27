@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { applicationsApi, type ApplicationResponse } from '../api/applicationsApi';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, XCircle } from 'lucide-react';
 
 export default function ApplicationDetailsPage() {
   const { id } = useParams<{ id: string }>();
