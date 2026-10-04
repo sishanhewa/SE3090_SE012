@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using TalentFlow.Application.Common;
 using TalentFlow.Application.DTOs.Interviews;
 using TalentFlow.Application.Interfaces.Repositories;
@@ -15,11 +16,19 @@ public class InterviewService : IInterviewService
 {
     private readonly IInterviewRepository _interviewRepository;
     private readonly IApplicationRepository _applicationRepository;
+    private readonly IGoogleCalendarService _calendarService;
+    private readonly ILogger<InterviewService> _logger;
 
-    public InterviewService(IInterviewRepository interviewRepository, IApplicationRepository applicationRepository)
+    public InterviewService(
+        IInterviewRepository interviewRepository,
+        IApplicationRepository applicationRepository,
+        IGoogleCalendarService calendarService,
+        ILogger<InterviewService> logger)
     {
         _interviewRepository = interviewRepository;
         _applicationRepository = applicationRepository;
+        _calendarService = calendarService;
+        _logger = logger;
     }
 
     public async Task<Result<InterviewResponse>> ScheduleInterviewAsync(CreateInterviewRequest request, CancellationToken cancellationToken = default)
@@ -43,6 +52,42 @@ public class InterviewService : IInterviewService
         };
 
         await _interviewRepository.AddAsync(interview, cancellationToken);
+
+        // Create Google Calendar event
+        try
+        {
+            var candidateName = application.CandidateProfile?.User?.FirstName ?? "Candidate";
+            var jobTitle = application.Job?.Title ?? "Interview";
+
+            var attendeeEmails = new List<string>();
+            if (application.CandidateProfile?.User?.Email != null)
+                attendeeEmails.Add(application.CandidateProfile.User.Email);
+
+            var calendarResult = await _calendarService.CreateInterviewEventAsync(new CalendarEventRequest
+            {
+                Title = $"Interview: {candidateName} — {jobTitle}",
+                Description = $"Interview for {jobTitle} position.\n\nCandidate: {candidateName}\n\n{request.Notes ?? ""}",
+                StartTime = request.ScheduledAt,
+                EndTime = request.ScheduledAt.AddMinutes(request.DurationMinutes),
+                Location = request.Location,
+                MeetingUrl = request.MeetingUrl,
+                AttendeeEmails = attendeeEmails
+            }, cancellationToken);
+
+            if (calendarResult.IsSuccess && calendarResult.Data != null)
+            {
+                interview.CalendarEventId = calendarResult.Data.EventId;
+                if (string.IsNullOrEmpty(interview.MeetingUrl) && !string.IsNullOrEmpty(calendarResult.Data.MeetLink))
+                {
+                    interview.MeetingUrl = calendarResult.Data.MeetLink;
+                }
+                await _interviewRepository.UpdateAsync(interview, cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create calendar event for interview {InterviewId}, continuing without it.", interview.Id);
+        }
 
         return Result<InterviewResponse>.Success(MapToResponse(interview));
     }
@@ -105,6 +150,21 @@ public class InterviewService : IInterviewService
 
         interview.Status = InterviewStatus.Cancelled;
         await _interviewRepository.UpdateAsync(interview, cancellationToken);
+
+        // Delete Google Calendar event if exists
+        if (!string.IsNullOrEmpty(interview.CalendarEventId))
+        {
+            try
+            {
+                await _calendarService.DeleteInterviewEventAsync(interview.CalendarEventId, cancellationToken);
+                _logger.LogInformation("Deleted calendar event {EventId} for cancelled interview {InterviewId}",
+                    interview.CalendarEventId, interview.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete calendar event for interview {InterviewId}", interview.Id);
+            }
+        }
 
         return Result.Success();
     }
