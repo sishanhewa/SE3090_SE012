@@ -5,18 +5,13 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { CheckSquare, Briefcase, CalendarDays, CheckCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { OnboardingTemplateList, EmployeeOnboardingProgress } from '../components/onboarding/OnboardingManagement';
 
 export default function OnboardingPage() {
   const [employees, setEmployees] = useState<EmployeeResponse[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeResponse | null>(null);
-  const [checklist, setChecklist] = useState({
-    documents: false,
-    equipment: false,
-    accounts: false,
-    orientation: false
-  });
 
   const fetchEmployees = async () => {
     try {
@@ -36,19 +31,12 @@ export default function OnboardingPage() {
 
   const handleCompleteOnboarding = async () => {
     if (!selectedEmployee) return;
-    
-    // Ensure all checklist items are completed
-    if (!Object.values(checklist).every(Boolean)) {
-      alert("Please complete all onboarding checklist items first.");
-      return;
-    }
 
     try {
       await employeesApi.update(selectedEmployee.id, 'company-1', {
         status: 'Active'
       });
       setSelectedEmployee(null);
-      setChecklist({ documents: false, equipment: false, accounts: false, orientation: false });
       fetchEmployees();
     } catch (error) {
       console.error('Failed to complete onboarding', error);
@@ -110,7 +98,6 @@ export default function OnboardingPage() {
                     <TableCell className="text-right">
                       <Button variant="outline" size="sm" onClick={() => {
                         setSelectedEmployee(emp);
-                        setChecklist({ documents: false, equipment: false, accounts: false, orientation: false });
                       }}>
                         Manage Onboarding
                       </Button>
@@ -124,7 +111,7 @@ export default function OnboardingPage() {
       </Card>
 
       <Dialog open={!!selectedEmployee} onOpenChange={(open) => !open && setSelectedEmployee(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Onboarding: {selectedEmployee?.name}</DialogTitle>
           </DialogHeader>
@@ -134,60 +121,23 @@ export default function OnboardingPage() {
               <div><strong>Start Date:</strong> {selectedEmployee ? new Date(selectedEmployee.startDate).toLocaleDateString() : ''}</div>
             </div>
 
-            <div className="space-y-4">
-              <h4 className="font-semibold">Checklist</h4>
-              
-              <label className="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-accent/50 transition-colors">
-                <input 
-                  type="checkbox" 
-                  className="w-5 h-5"
-                  checked={checklist.documents} 
-                  onChange={(e) => setChecklist({...checklist, documents: e.target.checked})} 
-                />
-                <span>Signed all tax and legal documents</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-accent/50 transition-colors">
-                <input 
-                  type="checkbox" 
-                  className="w-5 h-5"
-                  checked={checklist.equipment} 
-                  onChange={(e) => setChecklist({...checklist, equipment: e.target.checked})} 
-                />
-                <span>Provided necessary equipment (Laptop, etc.)</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-accent/50 transition-colors">
-                <input 
-                  type="checkbox" 
-                  className="w-5 h-5"
-                  checked={checklist.accounts} 
-                  onChange={(e) => setChecklist({...checklist, accounts: e.target.checked})} 
-                />
-                <span>Created IT and email accounts</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-accent/50 transition-colors">
-                <input 
-                  type="checkbox" 
-                  className="w-5 h-5"
-                  checked={checklist.orientation} 
-                  onChange={(e) => setChecklist({...checklist, orientation: e.target.checked})} 
-                />
-                <span>Completed HR orientation</span>
-              </label>
-            </div>
+            {selectedEmployee && (
+              <EmployeeOnboardingProgress employeeId={selectedEmployee.id} />
+            )}
 
             <Button 
               className="w-full gap-2" 
               onClick={handleCompleteOnboarding}
-              disabled={!Object.values(checklist).every(Boolean)}
             >
-              <CheckCircle className="h-4 w-4" /> Complete Onboarding
+              <CheckCircle className="h-4 w-4" /> Mark Onboarding Complete
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      <div className="pt-8 border-t">
+        <OnboardingTemplateList companyId="company-1" />
+      </div>
     </div>
   );
 }
