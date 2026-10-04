@@ -52,6 +52,16 @@ public class CandidateProfileService : ICandidateProfileService
         return Result<CandidateProfileResponse>.Success(MapToResponse(profile));
     }
 
+    public async Task<Result<CandidateProfileResponse>> GetProfileByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var profile = await _profileRepository.GetByIdAsync(id, cancellationToken);
+        
+        if (profile == null)
+            return Result<CandidateProfileResponse>.NotFound("Candidate profile not found.");
+
+        return Result<CandidateProfileResponse>.Success(MapToResponse(profile));
+    }
+
     public async Task<Result<CandidateProfileResponse>> UpdateProfileAsync(Guid userId, UpdateCandidateProfileRequest request, CancellationToken cancellationToken = default)
     {
         var profiles = await _profileRepository.FindAsync(p => p.UserId == userId, cancellationToken);

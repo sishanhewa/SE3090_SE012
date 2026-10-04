@@ -11,5 +11,7 @@ public interface IApplicationService
     Task<Result<PagedResult<ApplicationResponse>>> GetMyApplicationsAsync(Guid candidateProfileId, PaginationParams paginationParams, CancellationToken cancellationToken = default);
     Task<Result> WithdrawApplicationAsync(Guid id, Guid candidateProfileId, CancellationToken cancellationToken = default);
     Task<Result> UpdateApplicationStatusAsync(Guid id, TalentFlow.Domain.Enums.ApplicationStatus newStatus, string changedBy, string? notes = null, CancellationToken cancellationToken = default);
-    // Task<Result> UploadDocumentAsync(Guid applicationId, Stream fileStream, string fileName, string contentType, CancellationToken cancellationToken = default); // Placeholder for document upload
+    Task<Result<List<ApplicationHistoryResponse>>> GetApplicationHistoryAsync(Guid applicationId, CancellationToken cancellationToken = default);
+    Task<Result<List<DocumentResponse>>> GetApplicationDocumentsAsync(Guid applicationId, CancellationToken cancellationToken = default);
+    Task<Result<DocumentResponse>> UploadDocumentAsync(Guid applicationId, Guid userId, Stream fileStream, string fileName, long fileSize, CancellationToken cancellationToken = default);
 }

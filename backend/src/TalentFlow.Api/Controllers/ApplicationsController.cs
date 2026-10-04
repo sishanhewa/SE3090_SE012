@@ -47,6 +47,7 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetApplication(Guid id)
     {
         var result = await _applicationService.GetApplicationByIdAsync(id);
@@ -133,5 +134,53 @@ public class ApplicationsController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    [HttpGet("{id}/history")]
+    public async Task<IActionResult> GetApplicationHistory(Guid id)
+    {
+        var result = await _applicationService.GetApplicationByIdAsync(id);
+        if (!result.IsSuccess)
+            return NotFound(result.Error);
+
+        // Fetch history from DB directly
+        var history = await _applicationService.GetApplicationHistoryAsync(id);
+        if (!history.IsSuccess)
+            return BadRequest(history.Error);
+
+        return Ok(history.Data);
+    }
+
+    [HttpGet("{id}/documents")]
+    public async Task<IActionResult> GetApplicationDocuments(Guid id)
+    {
+        var docs = await _applicationService.GetApplicationDocumentsAsync(id);
+        if (!docs.IsSuccess)
+            return NotFound(docs.Error);
+
+        return Ok(docs.Data);
+    }
+
+    [HttpPost("{id}/documents")]
+    [Authorize(Roles = "Candidate")]
+    [RequestSizeLimit(10_485_760)] // 10 MB
+    public async Task<IActionResult> UploadDocument(Guid id, IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file provided.");
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var userGuid))
+            return Unauthorized();
+
+        var result = await _applicationService.UploadDocumentAsync(id, userGuid, file.OpenReadStream(), file.FileName, file.Length);
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
+            if (result.ErrorCode == "FORBIDDEN") return Forbid();
+            return BadRequest(result.Error);
+        }
+
+        return Ok(result.Data);
     }
 }

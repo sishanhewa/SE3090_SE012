@@ -53,6 +53,17 @@ public class CandidateProfilesController : ControllerBase
         return Ok(result.Data);
     }
 
+    [HttpGet("{id}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetProfileById(Guid id)
+    {
+        var result = await _profileService.GetProfileByIdAsync(id);
+        if (!result.IsSuccess)
+            return NotFound(result.Error);
+
+        return Ok(result.Data);
+    }
+
     [HttpPut("me")]
     [Authorize(Roles = "Candidate")]
     public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateCandidateProfileRequest request)

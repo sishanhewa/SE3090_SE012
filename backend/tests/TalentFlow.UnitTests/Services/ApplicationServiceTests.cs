@@ -22,7 +22,7 @@ public class ApplicationServiceTests
     {
         _applicationRepositoryMock = new Mock<IApplicationRepository>();
         _jobRepositoryMock = new Mock<IJobRepository>();
-        _sut = new ApplicationService(_applicationRepositoryMock.Object, _jobRepositoryMock.Object);
+        _sut = new ApplicationService(_applicationRepositoryMock.Object, _jobRepositoryMock.Object, null!);
     }
 
     [Fact]

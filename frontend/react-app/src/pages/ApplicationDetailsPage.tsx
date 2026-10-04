@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, XCircle } from 'lucide-react';
+import ApplicationTimeline from '../components/applications/ApplicationTimeline';
+import DocumentViewer from '../components/applications/DocumentViewer';
 
 export default function ApplicationDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -141,6 +143,12 @@ export default function ApplicationDetailsPage() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Timeline & Documents Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ApplicationTimeline applicationId={id!} />
+        <DocumentViewer applicationId={id!} canUpload={!isStaff} />
       </div>
 
       <div className="flex gap-4 pt-4 border-t">
