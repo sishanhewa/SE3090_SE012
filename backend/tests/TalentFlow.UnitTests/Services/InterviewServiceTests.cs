@@ -21,7 +21,12 @@ public class InterviewServiceTests
     {
         _interviewRepositoryMock = new Mock<IInterviewRepository>();
         _applicationRepositoryMock = new Mock<IApplicationRepository>();
-        _sut = new InterviewService(_interviewRepositoryMock.Object, _applicationRepositoryMock.Object);
+        _sut = new InterviewService(
+            _interviewRepositoryMock.Object, 
+            _applicationRepositoryMock.Object,
+            null!,
+            null!
+        );
     }
 
     [Fact]
