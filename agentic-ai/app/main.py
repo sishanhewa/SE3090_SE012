@@ -132,6 +132,8 @@ async def list_agents():
 
 async def _execute_workflow(workflow_id: str, request: WorkflowRequest):
     """Background task to execute the screening workflow."""
+    from app.clients.backend_client import push_workflow_results
+
     try:
         result = await run_screening_workflow(
             workflow_id=workflow_id,
@@ -153,6 +155,11 @@ async def _execute_workflow(workflow_id: str, request: WorkflowRequest):
             status=result.get("status"),
         )
 
+        # Push results back to the .NET backend database
+        # Use the ORIGINAL workflow_id from the backend request
+        backend_workflow_id = request.workflow_id if hasattr(request, 'workflow_id') and request.workflow_id else workflow_id
+        await push_workflow_results(backend_workflow_id, result)
+
     except Exception as e:
         logger.error(
             "screening_workflow_failed",
@@ -164,3 +171,12 @@ async def _execute_workflow(workflow_id: str, request: WorkflowRequest):
             "result": None,
             "error": str(e),
         }
+
+        # Push failure status back too
+        from app.clients.backend_client import push_workflow_results
+        backend_workflow_id = request.workflow_id if hasattr(request, 'workflow_id') and request.workflow_id else workflow_id
+        await push_workflow_results(backend_workflow_id, {
+            "status": WorkflowStatusEnum.FAILED.value,
+            "error": str(e),
+        })
+

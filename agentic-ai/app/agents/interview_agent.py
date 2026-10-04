@@ -69,11 +69,23 @@ class InterviewAgent:
         else:
             range_end = (datetime.utcnow() + timedelta(days=10)).isoformat()
 
+        # Step 0: Resolve candidate profile ID from application ID
+        from app.tools.candidate_tools import get_application
+        
+        try:
+            app_data = await self._call_tool(
+                "get_application",
+                get_application, input_data.application_id, auth_token
+            )
+            candidate_profile_id = app_data.get("candidate_profile_id") if app_data else input_data.candidate_profile_id
+        except Exception:
+            candidate_profile_id = input_data.candidate_profile_id
+
         # Step 1: Check candidate availability
         candidate_availability = await self._call_tool(
             "get_candidate_availability",
             get_candidate_availability,
-            input_data.candidate_profile_id,
+            candidate_profile_id,
             range_start,
             range_end,
             auth_token,

@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/api/api_client.dart';
-import '../../core/auth/auth_provider.dart';
+import '../../../core/api/api_client.dart';
+import '../../../core/auth/auth_provider.dart';
 import 'job_detail_screen.dart';
 
 class JobListScreen extends StatefulWidget {
@@ -18,6 +18,7 @@ class _JobListScreenState extends State<JobListScreen> {
   bool _isLoading = true;
   String _searchQuery = '';
   String? _selectedDepartment;
+  String _sortBy = 'newest'; // newest, salary_high, salary_low, title_az
 
   // Mock list of departments for filtering
   final List<String> _departments = ['Engineering', 'Design', 'Marketing', 'Sales', 'HR'];
@@ -43,8 +44,11 @@ class _JobListScreenState extends State<JobListScreen> {
       final response = await _apiClient.get('/jobs$query');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        var jobs = data['items'] ?? [];
+        // Client-side sorting
+        _sortJobs(jobs);
         setState(() {
-          _jobs = data['items'] ?? [];
+          _jobs = jobs;
           _isLoading = false;
         });
       } else {
@@ -52,6 +56,23 @@ class _JobListScreenState extends State<JobListScreen> {
       }
     } catch (e) {
       setState(() => _isLoading = false);
+    }
+  }
+
+  void _sortJobs(List<dynamic> jobs) {
+    switch (_sortBy) {
+      case 'newest':
+        jobs.sort((a, b) => (b['createdAt'] ?? '').compareTo(a['createdAt'] ?? ''));
+        break;
+      case 'salary_high':
+        jobs.sort((a, b) => ((b['salaryMax'] ?? 0) as num).compareTo((a['salaryMax'] ?? 0) as num));
+        break;
+      case 'salary_low':
+        jobs.sort((a, b) => ((a['salaryMin'] ?? 0) as num).compareTo((b['salaryMin'] ?? 0) as num));
+        break;
+      case 'title_az':
+        jobs.sort((a, b) => (a['title'] ?? '').toString().compareTo((b['title'] ?? '').toString()));
+        break;
     }
   }
 
@@ -68,6 +89,32 @@ class _JobListScreenState extends State<JobListScreen> {
       appBar: AppBar(
         title: const Text('Available Jobs'),
         actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sort),
+            tooltip: 'Sort by',
+            onSelected: (value) {
+              setState(() => _sortBy = value);
+              _fetchJobs();
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'newest', child: Row(children: [
+                Icon(_sortBy == 'newest' ? Icons.check : Icons.access_time, size: 18),
+                const SizedBox(width: 8), const Text('Newest First'),
+              ])),
+              PopupMenuItem(value: 'salary_high', child: Row(children: [
+                Icon(_sortBy == 'salary_high' ? Icons.check : Icons.trending_up, size: 18),
+                const SizedBox(width: 8), const Text('Salary: High to Low'),
+              ])),
+              PopupMenuItem(value: 'salary_low', child: Row(children: [
+                Icon(_sortBy == 'salary_low' ? Icons.check : Icons.trending_down, size: 18),
+                const SizedBox(width: 8), const Text('Salary: Low to High'),
+              ])),
+              PopupMenuItem(value: 'title_az', child: Row(children: [
+                Icon(_sortBy == 'title_az' ? Icons.check : Icons.sort_by_alpha, size: 18),
+                const SizedBox(width: 8), const Text('Title: A-Z'),
+              ])),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => authProvider.logout(),

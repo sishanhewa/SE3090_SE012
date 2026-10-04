@@ -29,10 +29,12 @@ class WorkflowPlan(BaseModel):
 
 class WorkflowRequest(BaseModel):
     """Request to start a recruitment screening workflow."""
+    workflow_id: str = Field("", description="Backend workflow execution ID (for callback)")
     application_id: str = Field(..., description="The application ID to screen")
     job_id: str = Field(..., description="The job ID to screen against")
     initiated_by: str = Field(..., description="User ID who initiated the workflow")
     company_id: str = Field(..., description="Company ID for isolation")
+
 
 
 class WorkflowResponse(BaseModel):

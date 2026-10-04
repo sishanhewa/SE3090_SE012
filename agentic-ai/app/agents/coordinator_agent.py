@@ -87,6 +87,12 @@ class CoordinatorAgent:
                     step_results, auth_token,
                 )
                 step_results[step.agent] = result
+
+                # Merge agent's tool logs
+                agent_instance = self._agents.get(step.agent)
+                if agent_instance and hasattr(agent_instance, 'tool_calls_log'):
+                    self.tool_calls_log.extend(agent_instance.tool_calls_log)
+
                 logger.info(
                     "coordinator_step_completed",
                     step=step.step_number,
@@ -100,6 +106,11 @@ class CoordinatorAgent:
                     error=str(e),
                 )
                 step_results[step.agent] = {"error": str(e)}
+
+                # Merge agent's tool logs even on failure if available
+                agent_instance = self._agents.get(step.agent)
+                if agent_instance and hasattr(agent_instance, 'tool_calls_log'):
+                    self.tool_calls_log.extend(agent_instance.tool_calls_log)
 
         # Step 3: Compile final results
         final_result = await self._compile_results(

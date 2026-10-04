@@ -14,7 +14,7 @@ export default function WorkflowDetailsPage() {
   const { user } = useAuthStore();
   
   const roles = user?.roles ?? [];
-  const isManager = roles.some((r) => ['SystemAdmin', 'HiringManager'].includes(r));
+  const isManager = roles.some((r) => ['SystemAdmin', 'HiringManager', 'Recruiter'].includes(r));
 
   const [workflow, setWorkflow] = useState<WorkflowExecutionResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -228,7 +228,43 @@ export default function WorkflowDetailsPage() {
                         {step.errorDetails}
                       </div>
                     )}
+                    <details className="mt-4 border border-border rounded-md overflow-hidden group">
+                      <summary className="bg-muted/50 p-2 cursor-pointer text-xs font-semibold hover:bg-muted text-muted-foreground group-open:text-foreground transition-colors outline-none">
+                        🛠️ Dev Console (Raw Logs & Gemini Payloads)
+                      </summary>
+                      <div className="p-3 bg-black/5 dark:bg-white/5 space-y-4">
+                        <div>
+                          <div className="text-xs font-semibold mb-1 text-purple-700 dark:text-purple-400">Agent Input:</div>
+                          <pre className="text-[10px] p-2 bg-background border rounded overflow-auto max-h-[200px]">
+                            {step.input ? JSON.stringify(JSON.parse(step.input), null, 2) : 'No Input'}
+                          </pre>
+                        </div>
+                        <div>
+                          <div className="text-xs font-semibold mb-1 text-purple-700 dark:text-purple-400">Agent Output (Gemini Response):</div>
+                          <pre className="text-[10px] p-2 bg-background border rounded overflow-auto max-h-[300px]">
+                            {step.output ? JSON.stringify(JSON.parse(step.output), null, 2) : 'No Output'}
+                          </pre>
+                        </div>
+                        {step.toolCalls.length > 0 && (
+                          <div>
+                            <div className="text-xs font-semibold mb-1 text-purple-700 dark:text-purple-400">Tool Payloads:</div>
+                            {step.toolCalls.map((tc, tcIdx) => (
+                              <div key={tc.id} className="mt-2 text-[10px] border-l-2 border-purple-300 pl-2">
+                                <span className="font-semibold">{tc.toolName}</span> ({tc.durationMs}ms)
+                                {tc.input && (
+                                  <div className="mt-1">
+                                    <span className="text-muted-foreground">Args: </span>
+                                    <code className="text-muted-foreground">{tc.input}</code>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </details>
                   </CardContent>
+
                 </Card>
               ))}
             </div>

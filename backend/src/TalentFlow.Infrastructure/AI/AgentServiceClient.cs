@@ -38,7 +38,7 @@ namespace TalentFlow.Infrastructure.AI
                     company_id = companyId
                 };
 
-                var response = await _httpClient.PostAsJsonAsync("/api/workflows/screening/start", request);
+                var response = await _httpClient.PostAsJsonAsync("/api/screening/start", request);
                 
                 if (response.IsSuccessStatusCode)
                 {

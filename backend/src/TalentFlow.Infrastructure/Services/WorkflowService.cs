@@ -9,6 +9,7 @@ using TalentFlow.Application.Interfaces.Services;
 using TalentFlow.Domain.Entities;
 using TalentFlow.Domain.Enums;
 using TalentFlow.Infrastructure.Persistence;
+using TalentFlow.Infrastructure.AI;
 
 namespace TalentFlow.Infrastructure.Services;
 
@@ -19,10 +20,12 @@ namespace TalentFlow.Infrastructure.Services;
 public class WorkflowService : IWorkflowService
 {
     private readonly AppDbContext _context;
+    private readonly IAgentServiceClient _agentServiceClient;
 
-    public WorkflowService(AppDbContext context)
+    public WorkflowService(AppDbContext context, IAgentServiceClient agentServiceClient)
     {
         _context = context;
+        _agentServiceClient = agentServiceClient;
     }
 
     public async Task<Result<WorkflowExecutionResponse>> StartScreeningWorkflowAsync(
@@ -56,8 +59,9 @@ public class WorkflowService : IWorkflowService
 
         // Update application status to Screening
         application.Status = ApplicationStatus.Screening;
-        application.History.Add(new ApplicationHistory
+        _context.ApplicationHistory.Add(new ApplicationHistory
         {
+            ApplicationId = application.Id,
             FromStatus = ApplicationStatus.Submitted,
             ToStatus = ApplicationStatus.Screening,
             ChangedBy = "System",
@@ -66,6 +70,15 @@ public class WorkflowService : IWorkflowService
 
         _context.WorkflowExecutions.Add(workflow);
         await _context.SaveChangesAsync(cancellationToken);
+
+        // Trigger AI Agent Service
+        _ = _agentServiceClient.StartScreeningWorkflowAsync(
+            workflow.Id.ToString(),
+            application.Id.ToString(),
+            application.JobId.ToString(),
+            initiatedById.ToString(),
+            companyId.ToString()
+        );
 
         return Result<WorkflowExecutionResponse>.Success(MapToResponse(workflow));
     }
@@ -109,8 +122,9 @@ public class WorkflowService : IWorkflowService
                 "Workflow is not awaiting approval.");
 
         workflow.Status = WorkflowStatus.Approved;
-        workflow.Approvals.Add(new WorkflowApproval
+        _context.WorkflowApprovals.Add(new WorkflowApproval
         {
+            WorkflowExecutionId = workflowId,
             RequestedAction = "Approve screening recommendation",
             Decision = "Approved",
             DecidedById = decidedById,
@@ -118,12 +132,62 @@ public class WorkflowService : IWorkflowService
             Comments = comments
         });
 
+        if (workflow.RelatedEntityType == "Application" && workflow.RelatedEntityId.HasValue)
+        {
+            var application = await _context.Applications.FindAsync(new object[] { workflow.RelatedEntityId.Value }, cancellationToken);
+            if (application != null)
+            {
+                var oldStatus = application.Status;
+                application.Status = ApplicationStatus.Interview;
+                _context.ApplicationHistory.Add(new ApplicationHistory
+                {
+                    ApplicationId = application.Id,
+                    FromStatus = oldStatus,
+                    ToStatus = ApplicationStatus.Interview,
+                    ChangedBy = "System",
+                    Notes = "Screening approved. Proceeding to interview."
+                });
+
+                if (!string.IsNullOrEmpty(workflow.FinalResult))
+                {
+                    try
+                    {
+                        using var doc = System.Text.Json.JsonDocument.Parse(workflow.FinalResult);
+                        var root = doc.RootElement;
+                        if (root.TryGetProperty("interview_proposal", out var ip) && 
+                            ip.TryGetProperty("proposed_slots", out var slots) && 
+                            slots.GetArrayLength() > 0)
+                        {
+                            var firstSlot = slots[0];
+                            if (firstSlot.TryGetProperty("start_time", out var startTimeProp) && 
+                                DateTime.TryParse(startTimeProp.GetString(), out var startTime))
+                            {
+                                _context.Interviews.Add(new Interview
+                                {
+                                    ApplicationId = application.Id,
+                                    ScheduledAt = startTime.ToUniversalTime(),
+                                    DurationMinutes = 60,
+                                    Status = InterviewStatus.Proposed,
+                                    Notes = "Proposed by Agentic AI based on calendar availability"
+                                });
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore JSON parsing errors silently
+                    }
+                }
+            }
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
 
         return Result<WorkflowExecutionResponse>.Success(MapToResponse(workflow));
     }
 
     public async Task<Result<WorkflowExecutionResponse>> RejectWorkflowAsync(
+
         Guid workflowId, Guid decidedById, string? comments,
         CancellationToken cancellationToken = default)
     {
@@ -137,8 +201,9 @@ public class WorkflowService : IWorkflowService
 
         workflow.Status = WorkflowStatus.Rejected;
         workflow.CompletedAt = DateTime.UtcNow;
-        workflow.Approvals.Add(new WorkflowApproval
+        _context.WorkflowApprovals.Add(new WorkflowApproval
         {
+            WorkflowExecutionId = workflowId,
             RequestedAction = "Approve screening recommendation",
             Decision = "Rejected",
             DecidedById = decidedById,
@@ -164,8 +229,9 @@ public class WorkflowService : IWorkflowService
                 "Workflow is not awaiting approval.");
 
         workflow.Status = WorkflowStatus.Planning; // Re-run
-        workflow.Approvals.Add(new WorkflowApproval
+        _context.WorkflowApprovals.Add(new WorkflowApproval
         {
+            WorkflowExecutionId = workflowId,
             RequestedAction = "Approve screening recommendation",
             Decision = "RevisionRequested",
             DecidedById = decidedById,
@@ -176,6 +242,69 @@ public class WorkflowService : IWorkflowService
         await _context.SaveChangesAsync(cancellationToken);
 
         return Result<WorkflowExecutionResponse>.Success(MapToResponse(workflow));
+    }
+
+    public async Task<Result<WorkflowExecutionResponse>> UpdateWorkflowFromAiAsync(
+        AiWorkflowCallbackRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var workflow = await _context.WorkflowExecutions
+            .Include(w => w.AgentSteps)
+            .FirstOrDefaultAsync(w => w.Id == request.WorkflowId, cancellationToken);
+
+        if (workflow == null)
+            return Result<WorkflowExecutionResponse>.NotFound("Workflow not found.");
+
+        // Update status
+        if (Enum.TryParse<WorkflowStatus>(request.Status, true, out var newStatus))
+            workflow.Status = newStatus;
+
+        workflow.FinalResult = request.FinalResult;
+        workflow.ErrorDetails = request.ErrorDetails;
+
+        if (newStatus == WorkflowStatus.AwaitingApproval ||
+            newStatus == WorkflowStatus.Completed ||
+            newStatus == WorkflowStatus.Failed)
+        {
+            if (newStatus != WorkflowStatus.AwaitingApproval)
+                workflow.CompletedAt = DateTime.UtcNow;
+        }
+
+        // Add agent steps
+        foreach (var step in request.AgentSteps)
+        {
+            var agentStep = new AgentStep
+            {
+                WorkflowExecutionId = workflow.Id,
+                AgentName = step.AgentName,
+                StepOrder = step.StepOrder,
+                Status = step.Status,
+                Input = step.Input,
+                Output = step.Output,
+                StartedAt = DateTime.UtcNow.AddSeconds(-1),
+                CompletedAt = DateTime.UtcNow,
+            };
+
+            foreach (var tc in step.ToolCalls)
+            {
+                agentStep.ToolCalls.Add(new ToolCall
+                {
+                    ToolName = tc.ToolName,
+                    Input = tc.Input,
+                    Output = tc.Output,
+                    Validated = tc.Validated,
+                    DurationMs = tc.DurationMs,
+                });
+            }
+
+            _context.AgentSteps.Add(agentStep);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        // Reload with full details for response
+        var updated = await GetWorkflowWithDetailsAsync(workflow.Id, cancellationToken);
+        return Result<WorkflowExecutionResponse>.Success(MapToResponse(updated!));
     }
 
     private async Task<WorkflowExecution?> GetWorkflowWithDetailsAsync(

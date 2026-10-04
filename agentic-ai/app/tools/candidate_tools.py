@@ -5,9 +5,32 @@ from typing import Any, Optional
 
 logger = structlog.get_logger()
 
-# Base URL for the ASP.NET backend API
-BACKEND_BASE_URL = "http://localhost:5000/api"
+import os
 
+# Base URL for the ASP.NET backend API
+BACKEND_BASE_URL = os.getenv("BACKEND_URL", "http://localhost:5155/api")
+
+
+async def get_application(
+    application_id: str, auth_token: Optional[str] = None
+) -> dict[str, Any]:
+    """Fetch application details including the candidate_profile_id."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        headers = _auth_headers(auth_token)
+        response = await client.get(
+            f"{BACKEND_BASE_URL}/applications/{application_id}", headers=headers
+        )
+        response.raise_for_status()
+        app_data = response.json()
+        
+        logger.info("tool_get_application", application_id=application_id, status="success")
+        return {
+            "application_id": application_id,
+            "job_id": app_data.get("jobId", ""),
+            "candidate_profile_id": app_data.get("candidateProfileId", ""),
+            "status": app_data.get("status", 0),
+            "cover_letter": app_data.get("coverLetter", ""),
+        }
 
 async def get_job_requirements(
     job_id: str, auth_token: Optional[str] = None

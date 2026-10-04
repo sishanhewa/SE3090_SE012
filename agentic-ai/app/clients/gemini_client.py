@@ -4,6 +4,9 @@ import structlog
 from typing import Any, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = structlog.get_logger()
 
@@ -11,22 +14,72 @@ logger = structlog.get_logger()
 class GeminiClient:
     """
     Wrapper around the Gemini API using LangChain's ChatGoogleGenerativeAI.
-    Provides structured output generation for the agent workflow.
+    Supports automatic key fallback when the primary key is rate-limited.
     """
 
     def __init__(self, model_name: str = "gemini-2.0-flash"):
-        api_key = os.getenv("GOOGLE_API_KEY", "")
-        if not api_key:
-            logger.warning("GOOGLE_API_KEY not set — Gemini calls will fail")
+        self._api_keys = []
+        primary = os.getenv("GOOGLE_API_KEY", "")
+        fallback = os.getenv("GOOGLE_API_KEY_FALLBACK", "")
 
-        self.llm = ChatGoogleGenerativeAI(
+        if primary:
+            self._api_keys.append(primary)
+        if fallback:
+            self._api_keys.append(fallback)
+
+        if not self._api_keys:
+            logger.warning("No GOOGLE_API_KEY set — Gemini calls will fail")
+            self._api_keys.append("")  # placeholder so __init__ doesn't crash
+
+        self._current_key_index = 0
+        self.model_name = model_name
+        self.llm = self._build_llm(self._api_keys[0])
+        logger.info(
+            "gemini_client_initialized",
             model=model_name,
+            keys_available=len(self._api_keys),
+        )
+
+    def _build_llm(self, api_key: str) -> ChatGoogleGenerativeAI:
+        return ChatGoogleGenerativeAI(
+            model=self.model_name,
             google_api_key=api_key,
             temperature=0.1,
             max_output_tokens=4096,
         )
-        self.model_name = model_name
-        logger.info("gemini_client_initialized", model=model_name)
+
+    def _rotate_key(self) -> bool:
+        """Switch to the next available API key. Returns False if none left."""
+        next_index = self._current_key_index + 1
+        if next_index < len(self._api_keys):
+            self._current_key_index = next_index
+            self.llm = self._build_llm(self._api_keys[next_index])
+            logger.info("gemini_key_rotated", key_index=next_index)
+            return True
+        logger.error("gemini_all_keys_exhausted")
+        return False
+
+    async def _invoke_with_fallback(self, messages: list, structured_llm=None):
+        """Invoke LLM with automatic key rotation on rate-limit errors."""
+        llm = structured_llm or self.llm
+        try:
+            return await llm.ainvoke(messages)
+        except Exception as e:
+            error_str = str(e).lower()
+            is_retryable = any(
+                kw in error_str
+                for kw in ["429", "rate", "quota", "resource_exhausted", "limit"]
+            )
+            if is_retryable and self._rotate_key():
+                logger.warning("gemini_retrying_with_fallback_key", error=str(e))
+                new_llm = self.llm
+                if structured_llm is not None:
+                    # Rebuild structured output wrapper with the new LLM
+                    new_llm = self.llm.with_structured_output(
+                        structured_llm.first.schema  # type: ignore
+                    ) if hasattr(structured_llm, "first") else self.llm
+                return await new_llm.ainvoke(messages)
+            raise
 
     async def generate_text(
         self,
@@ -39,7 +92,7 @@ class GeminiClient:
             messages.append(("system", system_instruction))
         messages.append(("human", prompt))
 
-        response = await self.llm.ainvoke(messages)
+        response = await self._invoke_with_fallback(messages)
         logger.info(
             "gemini_text_generated",
             prompt_length=len(prompt),
@@ -61,7 +114,7 @@ class GeminiClient:
             messages.append(("system", system_instruction))
         messages.append(("human", prompt))
 
-        result = await structured_llm.ainvoke(messages)
+        result = await self._invoke_with_fallback(messages, structured_llm)
         logger.info(
             "gemini_structured_generated",
             schema=output_schema.__name__,
@@ -128,3 +181,4 @@ def _format_dict(d: dict[str, Any], indent: int = 0) -> str:
         else:
             lines.append(f"{prefix}{key}: {value}")
     return "\n".join(lines)
+

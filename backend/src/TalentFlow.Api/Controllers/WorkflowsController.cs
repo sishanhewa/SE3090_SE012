@@ -87,7 +87,7 @@ public class WorkflowsController : ControllerBase
     /// Approve a workflow that is awaiting approval.
     /// </summary>
     [HttpPost("{id}/approve")]
-    [Authorize(Roles = "SystemAdmin,HiringManager")]
+    [Authorize(Roles = "SystemAdmin,HiringManager,Recruiter")]
     public async Task<IActionResult> ApproveWorkflow(
         Guid id,
         [FromBody] WorkflowDecisionRequest request,
@@ -109,7 +109,7 @@ public class WorkflowsController : ControllerBase
     /// Reject a workflow that is awaiting approval.
     /// </summary>
     [HttpPost("{id}/reject")]
-    [Authorize(Roles = "SystemAdmin,HiringManager")]
+    [Authorize(Roles = "SystemAdmin,HiringManager,Recruiter")]
     public async Task<IActionResult> RejectWorkflow(
         Guid id,
         [FromBody] WorkflowDecisionRequest request,
@@ -131,7 +131,7 @@ public class WorkflowsController : ControllerBase
     /// Request revision of a workflow that is awaiting approval.
     /// </summary>
     [HttpPost("{id}/revise")]
-    [Authorize(Roles = "SystemAdmin,HiringManager")]
+    [Authorize(Roles = "SystemAdmin,HiringManager,Recruiter")]
     public async Task<IActionResult> RequestRevision(
         Guid id,
         [FromBody] WorkflowDecisionRequest request,
@@ -147,6 +147,25 @@ public class WorkflowsController : ControllerBase
         {
             if (result.ErrorCode == "NotFound") return NotFound(result.Error);
             if (result.ErrorCode == "Forbidden") return Forbid();
+            return BadRequest(result.Error);
+        }
+        return Ok(result.Data);
+    }
+
+    /// <summary>
+    /// Internal callback for the AI service to push results back.
+    /// </summary>
+    [HttpPost("callback")]
+    [AllowAnonymous] // AI service calls this internally
+    public async Task<IActionResult> AiCallback(
+        [FromBody] AiWorkflowCallbackRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _workflowService.UpdateWorkflowFromAiAsync(
+            request, cancellationToken);
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
             return BadRequest(result.Error);
         }
         return Ok(result.Data);

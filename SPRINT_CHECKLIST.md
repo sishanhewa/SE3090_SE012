@@ -65,7 +65,7 @@
 - [x] `JobsController` created
 - [x] Company & Job DTOs created
 - [x] Coordinator Agent defined (schema + allowed tools)
-- [ ] Coordinator Agent input/output schema not formalized in shared docs
+- [x] Coordinator Agent input/output schema not formalized in shared docs
 
 ### Member 2 — Candidate & Application Management (Sprint 1)
 
@@ -81,7 +81,7 @@
 - [x] `ApplicationsController` created
 - [x] Candidate & Application DTOs created
 - [x] Candidate Analysis Agent defined (schema + allowed tools + denied tools)
-- [ ] `CandidateSkill`, `CandidateEducation`, `CandidateExperience` — verify if separate entities or embedded
+- [x] `CandidateSkill`, `CandidateEducation`, `CandidateExperience` — verified as separate entities
 - [ ] `CandidateDocument` entity — document upload investigation needed
 
 ### Member 3 — Interview & Hiring Management (Sprint 1)
@@ -94,9 +94,9 @@
 - [x] `InterviewsController` created
 - [x] Interview DTOs created
 - [x] Interview Agent defined (schema + allowed tools)
-- [ ] `InterviewPanelMember` — verify if a separate entity exists
-- [ ] `InterviewFeedback` — verify structure
-- [ ] `HiringDecision` entity — not found as separate entity
+- [x] `InterviewPanelMember` — verified separate entity exists
+- [x] `InterviewFeedback` — verified structure
+- [x] `HiringDecision` entity — verified separate entity exists
 - [ ] Google Calendar API spike not documented
 
 ### Member 4 — Employee & Onboarding Management (Sprint 1)
@@ -112,12 +112,12 @@
 - [x] `WorkflowExecution` entity created (shared AI DB table)
 - [x] `WorkflowConfiguration` (EF Core fluent config)
 - [x] `WorkflowsController` scaffolded
-- [ ] `EmployeePosition` entity — not found as separate entity
-- [ ] `OnboardingTemplate` entity — not created
-- [ ] `OnboardingTask` entity — not created
-- [ ] `EmployeeOnboardingTask` entity — not created
-- [ ] `EmployeeStatusHistory` entity — not created
-- [ ] `AgentStep`, `ToolCall`, `ValidationResult`, `WorkflowApproval` DB tables — not created
+- [x] `EmployeePosition` entity — using string Position instead
+- [x] `OnboardingTemplate` entity — created
+- [x] `OnboardingTask` entity — created
+- [x] `EmployeeOnboardingTask` entity — created
+- [x] `EmployeeStatusHistory` entity — created
+- [x] `AgentStep`, `ToolCall`, `ValidationResult`, `WorkflowApproval` DB tables — created
 
 ### Sprint 1 Checkpoint
 
@@ -178,8 +178,8 @@
 - [x] Application deadline validation
 - [x] Application status transitions
 - [x] Duplicate application prevention
-- [ ] `POST /applications/{id}/documents` — Document upload endpoint
-- [ ] Application history tracking — `ApplicationHistory` entity
+- [x] `POST /applications/{id}/documents` — Document upload endpoint
+- [x] Application history tracking — `ApplicationHistory` entity
 
 **React:**
 - [x] Applicant List page
@@ -212,17 +212,17 @@
 - [x] Application status validation for scheduling
 - [x] Offer management (Controller, Service, Repository)
 - [x] `OfferStatus` enum
-- [ ] Candidate conflict detection — verify
-- [ ] Interviewer conflict detection — verify
-- [ ] Shortlisted-only rule enforcement — verify
+- [x] Candidate conflict detection — verified
+- [x] Interviewer conflict detection — verified
+- [x] Shortlisted-only rule enforcement — verified
 - [ ] Google Calendar basic integration — not started
 
 **React:**
 - [x] Interview List/Calendar page
 - [x] Interview Details page
 - [x] Offers page
-- [ ] Feedback Form — verify completeness
-- [ ] Hiring Decision UI — verify
+- [x] Feedback Form — verified
+- [x] Hiring Decision UI — verified
 
 **Flutter:**
 - [x] Interview Detail screen
@@ -242,9 +242,9 @@
 - [x] `PATCH /employees/{id}/status` — Status transitions
 - [x] Employee service with business logic
 - [ ] `POST /employees/from-hire/{applicationId}` — Employee creation from accepted offer
-- [ ] `GET /employees/{id}/onboarding` — Onboarding tasks endpoint
-- [ ] `PATCH /onboarding/tasks/{id}` — Task completion
-- [ ] Onboarding template auto-creation (entities missing)
+- [x] `GET /employees/{id}/onboarding` — Onboarding tasks endpoint
+- [x] `PATCH /onboarding/tasks/{id}` — Task completion
+- [ ] Onboarding template auto-creation
 
 **React:**
 - [x] Employee List page
@@ -327,10 +327,10 @@
   - [x] `get_calendar_availability` — check Google Calendar
 - [x] Implement slot suggestion logic (propose 3 options)
 - [x] Implement `create_interview_draft` — draft interview (pending approval)
-- [ ] After approval:
-  - [ ] Create actual interview record in DB
+- [x] After approval:
+  - [x] Create actual interview record in DB
   - [ ] Create Google Calendar event (optional)
-  - [ ] Update application status to "Interview"
+  - [x] Update application status to "Interview"
 - [x] Test: calendar timeout handling
 - [x] Test: scheduling collision detection
 - [x] Test: invalid slot proposal
@@ -374,9 +374,9 @@
 
 ### Shared — Flutter AI Status UI (Sprint 3)
 
-- [ ] AI Screening Status indicator on application
-- [ ] Application Workflow Progress tracker
-- [ ] Interview result/status updates
+- [x] AI Screening Status indicator on application
+- [x] Application Workflow Progress tracker
+- [x] Interview result/status updates
 - [ ] Real-time or polling-based status refresh
 
 ### Sprint 3 Checkpoint — THE CRITICAL MILESTONE 🎯

@@ -68,6 +68,9 @@ public static class DependencyInjection
         services.AddScoped<ICandidateScoringService, CandidateScoringService>();
         services.AddScoped<ISchedulingService, SchedulingService>();
         services.AddScoped<IWorkflowService, WorkflowService>();
+
+        // Google Calendar integration
+        services.AddHttpClient<IGoogleCalendarService, GoogleCalendarService>();
         
         services.AddHttpClient<IAgentServiceClient, AgentServiceClient>(client =>
         {

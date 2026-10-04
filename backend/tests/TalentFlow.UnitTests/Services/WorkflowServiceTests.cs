@@ -27,7 +27,7 @@ public class WorkflowServiceTests
     public async Task GetWorkflow_NonExistent_ReturnsNotFound()
     {
         using var context = CreateTestContext();
-        var service = new WorkflowService(context);
+        var service = new WorkflowService(context, null!);
 
         var result = await service.GetWorkflowAsync(Guid.NewGuid());
 
@@ -49,7 +49,7 @@ public class WorkflowServiceTests
         context.WorkflowExecutions.Add(workflow);
         await context.SaveChangesAsync();
 
-        var service = new WorkflowService(context);
+        var service = new WorkflowService(context, null!);
         var result = await service.ApproveWorkflowAsync(
             workflow.Id, Guid.NewGuid(), "test comment");
 
@@ -70,7 +70,7 @@ public class WorkflowServiceTests
         context.WorkflowExecutions.Add(workflow);
         await context.SaveChangesAsync();
 
-        var service = new WorkflowService(context);
+        var service = new WorkflowService(context, null!);
         var result = await service.RejectWorkflowAsync(
             workflow.Id, Guid.NewGuid(), "test reason");
 

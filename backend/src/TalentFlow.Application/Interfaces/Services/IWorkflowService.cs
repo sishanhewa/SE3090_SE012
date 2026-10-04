@@ -28,7 +28,40 @@ public interface IWorkflowService
     Task<Result<WorkflowExecutionResponse>> RequestRevisionAsync(
         Guid workflowId, Guid decidedById, string comments,
         CancellationToken cancellationToken = default);
+
+    Task<Result<WorkflowExecutionResponse>> UpdateWorkflowFromAiAsync(
+        AiWorkflowCallbackRequest request,
+        CancellationToken cancellationToken = default);
 }
+
+public class AiWorkflowCallbackRequest
+{
+    public Guid WorkflowId { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string? FinalResult { get; set; }
+    public string? ErrorDetails { get; set; }
+    public List<AiAgentStepRequest> AgentSteps { get; set; } = new();
+}
+
+public class AiAgentStepRequest
+{
+    public string AgentName { get; set; } = string.Empty;
+    public int StepOrder { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string? Input { get; set; }
+    public string? Output { get; set; }
+    public List<AiToolCallRequest> ToolCalls { get; set; } = new();
+}
+
+public class AiToolCallRequest
+{
+    public string ToolName { get; set; } = string.Empty;
+    public string? Input { get; set; }
+    public string? Output { get; set; }
+    public bool Validated { get; set; }
+    public int DurationMs { get; set; }
+}
+
 
 public class StartScreeningRequest
 {

@@ -19,21 +19,30 @@ class ApiClient {
     return await http.get(Uri.parse('$baseUrl$endpoint'), headers: headers);
   }
 
-  Future<http.Response> post(String endpoint, Map<String, dynamic> data) async {
+  Future<http.Response> post(String endpoint, [Map<String, dynamic>? data]) async {
     final headers = await _getHeaders();
     return await http.post(
       Uri.parse('$baseUrl$endpoint'),
       headers: headers,
-      body: jsonEncode(data),
+      body: data != null ? jsonEncode(data) : null,
     );
   }
 
-  Future<http.Response> put(String endpoint, Map<String, dynamic> data) async {
+  Future<http.Response> put(String endpoint, [Map<String, dynamic>? data]) async {
     final headers = await _getHeaders();
     return await http.put(
       Uri.parse('$baseUrl$endpoint'),
       headers: headers,
-      body: jsonEncode(data),
+      body: data != null ? jsonEncode(data) : null,
+    );
+  }
+
+  Future<http.Response> patch(String endpoint, [Map<String, dynamic>? data]) async {
+    final headers = await _getHeaders();
+    return await http.patch(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: headers,
+      body: data != null ? jsonEncode(data) : null,
     );
   }
 }

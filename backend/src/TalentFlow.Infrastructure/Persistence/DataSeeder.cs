@@ -174,15 +174,28 @@ public static class DataSeeder
                 await userManager.AddToRoleAsync(candidate, "Candidate");
                 
                 // Add Candidate Profile
-                dbContext.CandidateProfiles.Add(new CandidateProfile
+                var profile = new CandidateProfile
                 {
                     UserId = candidate.Id,
                     Summary = "Experienced software engineer looking for new challenges.",
                     Phone = "+1 555-0100"
-                });
+                };
+                dbContext.CandidateProfiles.Add(profile);
+                await dbContext.SaveChangesAsync();
+
+                // Seed Application
+                var application = new TalentFlow.Domain.Entities.Application
+                {
+                    JobId = job1.Id,
+                    CandidateProfileId = profile.Id,
+                    Status = TalentFlow.Domain.Enums.ApplicationStatus.Screening,
+                    CoverLetter = "I am a senior backend engineer with 5 years of C# experience.",
+                    SubmittedAt = DateTime.UtcNow
+                };
+                dbContext.Applications.Add(application);
                 await dbContext.SaveChangesAsync();
             }
-            logger.LogInformation("Seeded sample recruiter and candidate users.");
+            logger.LogInformation("Seeded sample recruiter, candidate, and application.");
         }
     }
 }

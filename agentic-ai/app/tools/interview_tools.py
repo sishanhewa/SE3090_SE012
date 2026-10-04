@@ -6,14 +6,16 @@ from datetime import datetime, timedelta
 
 logger = structlog.get_logger()
 
-BACKEND_BASE_URL = "http://localhost:5000/api"
+import os
+
+BACKEND_BASE_URL = os.getenv("BACKEND_URL", "http://localhost:5155/api")
 
 
 async def get_candidate_availability(
     candidate_profile_id: str,
     date_range_start: str,
     date_range_end: str,
-    auth_token: Optional[str] = None,
+    auth_token: str | None = None,
 ) -> dict[str, Any]:
     """
     Check candidate interview availability within a date range.
@@ -21,41 +23,18 @@ async def get_candidate_availability(
     
     Allowed tool for: InterviewAgent
     """
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        headers = _auth_headers(auth_token)
-
-        # Get candidate's existing interviews via application
-        response = await client.get(
-            f"{BACKEND_BASE_URL}/interviews",
-            params={
-                "candidateProfileId": candidate_profile_id,
-                "fromDate": date_range_start,
-                "toDate": date_range_end,
-            },
-            headers=headers,
-        )
-        response.raise_for_status()
-        interviews = response.json()
-
-        existing_slots = []
-        for interview in interviews.get("items", interviews) if isinstance(interviews, dict) else interviews:
-            existing_slots.append({
-                "scheduled_at": interview.get("scheduledAt", ""),
-                "duration_minutes": interview.get("durationMinutes", 60),
-                "status": interview.get("status", ""),
-            })
-
-        logger.info(
-            "tool_get_candidate_availability",
-            candidate_id=candidate_profile_id,
-            existing_interviews=len(existing_slots),
-        )
-        return {
-            "candidate_profile_id": candidate_profile_id,
-            "date_range": {"start": date_range_start, "end": date_range_end},
-            "existing_interviews": existing_slots,
-            "has_conflicts": len(existing_slots) > 0,
-        }
+    logger.info(
+        "tool_get_candidate_availability",
+        candidate_profile_id=candidate_profile_id,
+        note="Backend endpoint pending - returning no conflicts",
+    )
+    return {
+        "candidate_profile_id": candidate_profile_id,
+        "date_range": {"start": date_range_start, "end": date_range_end},
+        "existing_interviews": [],
+        "has_conflicts": False,
+        "note": "Availability check mocked.",
+    }
 
 
 async def get_interviewer_availability(

@@ -4,6 +4,7 @@ from typing import Any, Optional
 
 from app.clients.gemini_client import GeminiClient
 from app.tools.candidate_tools import (
+    get_application,
     get_job_requirements,
     get_candidate_profile,
     get_candidate_skills,
@@ -44,6 +45,7 @@ class CandidateAnalysisAgent:
     def __init__(self, gemini_client: Optional[GeminiClient] = None):
         self.name = "CandidateAnalysisAgent"
         self.allowed_tools = [
+            "get_application",
             "get_job_requirements",
             "get_candidate_profile",
             "get_candidate_skills",
@@ -66,6 +68,13 @@ class CandidateAnalysisAgent:
         )
 
         # Step 1: Gather data using allowed tools
+        app_data = await self._call_tool(
+            "get_application",
+            get_application, input_data.application_id, auth_token
+        )
+        
+        candidate_profile_id = app_data.get("candidate_profile_id") if app_data else input_data.application_id
+
         job_data = await self._call_tool(
             "get_job_requirements",
             get_job_requirements, input_data.job_id, auth_token
@@ -73,45 +82,46 @@ class CandidateAnalysisAgent:
 
         profile_data = await self._call_tool(
             "get_candidate_profile",
-            get_candidate_profile, input_data.application_id, auth_token
+            get_candidate_profile, candidate_profile_id, auth_token
         )
 
         skills_data = await self._call_tool(
             "get_candidate_skills",
-            get_candidate_skills, input_data.application_id, auth_token
+            get_candidate_skills, candidate_profile_id, auth_token
         )
 
         experience_data = await self._call_tool(
             "get_candidate_experience",
-            get_candidate_experience, input_data.application_id, auth_token
+            get_candidate_experience, candidate_profile_id, auth_token
         )
 
         education_data = await self._call_tool(
             "get_candidate_education",
-            get_candidate_education, input_data.application_id, auth_token
+            get_candidate_education, candidate_profile_id, auth_token
         )
 
         documents_data = await self._call_tool(
             "get_application_documents",
-            get_application_documents, input_data.application_id, auth_token
+            get_application_documents, candidate_profile_id, auth_token
         )
 
         # Step 2: Match skills
+        job_reqs = job_data.get("skill_requirements", []) if job_data else []
         mandatory_matches = self._match_skills(
-            job_data.get("skill_requirements", []),
+            job_reqs,
             skills_data or [],
             mandatory_only=True,
         )
 
         preferred_matches = self._match_skills(
-            job_data.get("skill_requirements", []),
+            job_reqs,
             skills_data or [],
             mandatory_only=False,
         )
 
         # Step 3: Calculate experience
         total_experience = self._calculate_experience(experience_data or [])
-        min_required = job_data.get("minimum_experience", 0)
+        min_required = job_data.get("minimum_experience", 0) if job_data else 0
 
         # Step 4: Summarize education
         education_summary = self._summarize_education(education_data or [])
