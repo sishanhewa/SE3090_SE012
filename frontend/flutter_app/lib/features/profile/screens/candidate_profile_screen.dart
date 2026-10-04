@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/api/api_client.dart';
-import '../../core/auth/auth_provider.dart';
+import '../../../core/api/api_client.dart';
+import '../../../core/auth/auth_provider.dart';
 
 class CandidateProfileScreen extends StatefulWidget {
   const CandidateProfileScreen({Key? key}) : super(key: key);
@@ -61,13 +61,13 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
     
     setState(() => _isSaving = true);
     
-    final payload = jsonEncode({
+    final payload = {
       'headline': _headlineController.text,
       'professionalSummary': _summaryController.text,
       'skills': _skillsController.text,
       'experience': _experienceController.text,
       'education': _educationController.text,
-    });
+    };
 
     try {
       final isUpdate = _profile != null;
@@ -129,7 +129,7 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
               if (_profile == null) 
                 Container(
                   padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.bottom(16),
+                  margin: const EdgeInsets.only(bottom: 16),
                   color: Colors.amber.shade100,
                   child: const Text('Please complete your profile to apply for jobs.'),
                 ),

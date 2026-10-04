@@ -10,5 +10,6 @@ public interface ICandidateProfileService
 {
     Task<Result<CandidateProfileResponse>> CreateProfileAsync(Guid userId, CreateCandidateProfileRequest request, CancellationToken cancellationToken = default);
     Task<Result<CandidateProfileResponse>> GetProfileByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<Result<CandidateProfileResponse>> GetProfileByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Result<CandidateProfileResponse>> UpdateProfileAsync(Guid userId, UpdateCandidateProfileRequest request, CancellationToken cancellationToken = default);
 }

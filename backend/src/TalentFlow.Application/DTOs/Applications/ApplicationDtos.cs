@@ -26,3 +26,24 @@ public class ApplicationResponse
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
+
+public class ApplicationHistoryResponse
+{
+    public Guid Id { get; set; }
+    public string FromStatus { get; set; } = string.Empty;
+    public string ToStatus { get; set; } = string.Empty;
+    public string? ChangedBy { get; set; }
+    public string? Notes { get; set; }
+    public DateTime ChangedAt { get; set; }
+}
+
+public class DocumentResponse
+{
+    public Guid Id { get; set; }
+    public string FileName { get; set; } = string.Empty;
+    public string FileUrl { get; set; } = string.Empty;
+    public string FileType { get; set; } = string.Empty;
+    public long FileSizeBytes { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+

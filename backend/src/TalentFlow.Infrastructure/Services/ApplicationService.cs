@@ -1,13 +1,17 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 using TalentFlow.Application.Common;
 using TalentFlow.Application.DTOs.Applications;
 using TalentFlow.Application.Interfaces.Repositories;
 using TalentFlow.Application.Interfaces.Services;
 using TalentFlow.Domain.Entities;
 using TalentFlow.Domain.Enums;
+using TalentFlow.Infrastructure.Persistence;
 
 namespace TalentFlow.Infrastructure.Services;
 
@@ -15,11 +19,13 @@ public class ApplicationService : IApplicationService
 {
     private readonly IApplicationRepository _applicationRepository;
     private readonly IJobRepository _jobRepository;
+    private readonly AppDbContext _context;
 
-    public ApplicationService(IApplicationRepository applicationRepository, IJobRepository jobRepository)
+    public ApplicationService(IApplicationRepository applicationRepository, IJobRepository jobRepository, AppDbContext context)
     {
         _applicationRepository = applicationRepository;
         _jobRepository = jobRepository;
+        _context = context;
     }
 
     public async Task<Result<ApplicationResponse>> CreateApplicationAsync(Guid jobId, CreateApplicationRequest request, Guid candidateProfileId, CancellationToken cancellationToken = default)
@@ -50,14 +56,12 @@ public class ApplicationService : IApplicationService
 
         application.History.Add(new ApplicationHistory
         {
-            FromStatus = ApplicationStatus.Submitted, // Actually, it's starting at Submitted
+            FromStatus = ApplicationStatus.Submitted,
             ToStatus = ApplicationStatus.Submitted,
             Notes = "Application submitted"
         });
 
         await _applicationRepository.AddAsync(application, cancellationToken);
-
-        // Normally we might trigger an event to score the AI here, but for sprint 1 we'll mock it or leave it null
 
         return Result<ApplicationResponse>.Success(MapToResponse(application));
     }
@@ -170,6 +174,107 @@ public class ApplicationService : IApplicationService
 
         await _applicationRepository.UpdateAsync(application, cancellationToken);
         return Result.Success();
+    }
+
+    public async Task<Result<List<ApplicationHistoryResponse>>> GetApplicationHistoryAsync(Guid applicationId, CancellationToken cancellationToken = default)
+    {
+        var history = await _context.ApplicationHistory
+            .Where(h => h.ApplicationId == applicationId)
+            .OrderBy(h => h.ChangedAt)
+            .Select(h => new ApplicationHistoryResponse
+            {
+                Id = h.Id,
+                FromStatus = h.FromStatus.ToString(),
+                ToStatus = h.ToStatus.ToString(),
+                ChangedBy = h.ChangedBy,
+                Notes = h.Notes,
+                ChangedAt = h.ChangedAt
+            })
+            .ToListAsync(cancellationToken);
+
+        return Result<List<ApplicationHistoryResponse>>.Success(history);
+    }
+
+    public async Task<Result<List<DocumentResponse>>> GetApplicationDocumentsAsync(Guid applicationId, CancellationToken cancellationToken = default)
+    {
+        var application = await _context.Applications
+            .Include(a => a.CandidateProfile)
+                .ThenInclude(cp => cp.Documents)
+            .FirstOrDefaultAsync(a => a.Id == applicationId, cancellationToken);
+
+        if (application == null)
+            return Result<List<DocumentResponse>>.NotFound("Application not found.");
+
+        var docs = application.CandidateProfile.Documents
+            .Select(d => new DocumentResponse
+            {
+                Id = d.Id,
+                FileName = d.FileName,
+                FileUrl = d.FileUrl,
+                FileType = d.FileType,
+                FileSizeBytes = d.FileSizeBytes,
+                CreatedAt = d.CreatedAt
+            })
+            .ToList();
+
+        return Result<List<DocumentResponse>>.Success(docs);
+    }
+
+    public async Task<Result<DocumentResponse>> UploadDocumentAsync(Guid applicationId, Guid userId, Stream fileStream, string fileName, long fileSize, CancellationToken cancellationToken = default)
+    {
+        var application = await _context.Applications
+            .Include(a => a.CandidateProfile)
+            .FirstOrDefaultAsync(a => a.Id == applicationId, cancellationToken);
+
+        if (application == null)
+            return Result<DocumentResponse>.NotFound("Application not found.");
+
+        if (application.CandidateProfile.UserId != userId)
+            return Result<DocumentResponse>.Forbidden();
+
+        // Determine file type from extension
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        var fileType = extension switch
+        {
+            ".pdf" => "CV",
+            ".doc" or ".docx" => "CV",
+            ".jpg" or ".jpeg" or ".png" => "Certificate",
+            _ => "Document"
+        };
+
+        // Save to local storage (uploads directory)
+        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "documents");
+        Directory.CreateDirectory(uploadsDir);
+
+        var uniqueFileName = $"{Guid.NewGuid()}{extension}";
+        var filePath = Path.Combine(uploadsDir, uniqueFileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await fileStream.CopyToAsync(stream, cancellationToken);
+        }
+
+        var document = new CandidateDocument
+        {
+            CandidateProfileId = application.CandidateProfileId,
+            FileName = fileName,
+            FileUrl = $"/uploads/documents/{uniqueFileName}",
+            FileType = fileType,
+            FileSizeBytes = fileSize
+        };
+
+        _context.CandidateDocuments.Add(document);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return Result<DocumentResponse>.Success(new DocumentResponse
+        {
+            Id = document.Id,
+            FileName = document.FileName,
+            FileUrl = document.FileUrl,
+            FileType = document.FileType,
+            FileSizeBytes = document.FileSizeBytes,
+            CreatedAt = document.CreatedAt
+        });
     }
 
     private static ApplicationResponse MapToResponse(Domain.Entities.Application application)

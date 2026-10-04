@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../../core/api/api_client.dart';
+import '../../../core/api/api_client.dart';
 import 'application_detail_screen.dart';
 
 class MyApplicationsScreen extends StatefulWidget {
