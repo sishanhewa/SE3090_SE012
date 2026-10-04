@@ -78,8 +78,8 @@ public class EmployeesController : ControllerBase
     [Authorize(Roles = "SystemAdmin,CompanyAdmin,HiringManager,Recruiter")]
     public async Task<IActionResult> CreateEmployeeFromHire(Guid applicationId)
     {
-        // Note: The implementation logic for this should ideally be in IEmployeeService.
-        // For now, it returns a 501 Not Implemented or routes to a temporary placeholder.
-        return StatusCode(501, "Endpoint is pending full implementation. Please use CreateEmployee for manual creation.");
+        var result = await _employeeService.CreateEmployeeFromHireAsync(applicationId);
+        if (!result.IsSuccess) return BadRequest(result.Error);
+        return Ok(result.Data);
     }
 }

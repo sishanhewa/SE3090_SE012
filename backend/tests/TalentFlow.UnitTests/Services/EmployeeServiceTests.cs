@@ -19,7 +19,7 @@ public class EmployeeServiceTests
     public EmployeeServiceTests()
     {
         _employeeRepositoryMock = new Mock<IEmployeeRepository>();
-        _sut = new EmployeeService(_employeeRepositoryMock.Object);
+        _sut = new EmployeeService(_employeeRepositoryMock.Object, null!);
     }
 
     [Fact]
