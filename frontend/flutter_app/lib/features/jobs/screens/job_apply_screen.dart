@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../core/api/api_client.dart';
@@ -10,10 +9,10 @@ class JobApplyScreen extends StatefulWidget {
   final String jobId;
   final String jobTitle;
 
-  const JobApplyScreen({Key? key, required this.jobId, required this.jobTitle}) : super(key: key);
+  const JobApplyScreen({super.key, required this.jobId, required this.jobTitle});
 
   @override
-  _JobApplyScreenState createState() => _JobApplyScreenState();
+  State<JobApplyScreen> createState() => _JobApplyScreenState();
 }
 
 class _JobApplyScreenState extends State<JobApplyScreen> {
@@ -26,12 +25,13 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
   PlatformFile? _selectedFile;
   String? _uploadedDocumentId;
   bool _isUploading = false;
+  String? _createdApplicationId;
 
   Future<void> _pickFile() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx'],
+        allowedExtensions: ['pdf', 'docx'],
         withData: true,
       );
 
@@ -42,13 +42,14 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to select file.')),
       );
     }
   }
 
-  Future<String?> _uploadResume() async {
+  Future<String?> _uploadResume(String applicationId) async {
     if (_selectedFile == null) return null;
     if (_uploadedDocumentId != null) return _uploadedDocumentId;
 
@@ -60,7 +61,7 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('${ApiClient.baseUrl}/candidates/profile/documents'),
+        Uri.parse('${ApiClient.baseUrl}/applications/$applicationId/documents'),
       );
 
       if (token != null) {
@@ -78,6 +79,8 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
           'file',
           _selectedFile!.path!,
         ));
+      } else {
+        throw StateError('The selected CV could not be read.');
       }
 
       final response = await request.send();
@@ -102,42 +105,55 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
 
   Future<void> _submitApplication() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select a PDF or DOCX CV before applying.')),
+      );
+      return;
+    }
+    if (_selectedFile!.size > 10000000) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('CV must be smaller than 10 MB.')),
+      );
+      return;
+    }
 
     setState(() => _isSubmitting = true);
 
     try {
-      // Upload resume if selected
-      String? resumeId;
-      if (_selectedFile != null) {
-        resumeId = await _uploadResume();
+      if (_createdApplicationId == null) {
+        final response = await _apiClient.post(
+          '/applications/jobs/${widget.jobId}',
+          {'coverLetter': _coverLetterController.text.trim()},
+        );
+        if (response.statusCode != 201) {
+          final error = jsonDecode(response.body);
+          throw StateError(error is String ? error : (error['message'] ?? 'Application could not be submitted.'));
+        }
+        _createdApplicationId = jsonDecode(response.body)['id'] as String?;
+        if (_createdApplicationId == null) throw StateError('Application response was incomplete.');
       }
 
-      final response = await _apiClient.post(
-        '/applications/jobs/${widget.jobId}',
-        {
-          'jobId': widget.jobId,
-          'coverLetter': _coverLetterController.text,
-          if (resumeId != null) 'resumeDocumentId': resumeId,
-        },
-      );
-
-      setState(() => _isSubmitting = false);
-
-      if (response.statusCode == 201) {
+      final resumeId = await _uploadResume(_createdApplicationId!);
+      if (resumeId != null) {
+        if (!mounted) return;
+        setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Application submitted successfully!')),
+          const SnackBar(content: Text('Application and CV submitted successfully.')),
         );
         Navigator.pop(context, true);
       } else {
-        final error = jsonDecode(response.body);
+        if (!mounted) return;
+        setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to submit: ${error['message'] ?? 'Unknown error'}')),
+          const SnackBar(content: Text('Application saved, but CV upload failed. Tap Retry CV upload.')),
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Network error. Please try again later.')),
+        SnackBar(content: Text(e is StateError ? e.message.toString() : 'Network error. Please try again.')),
       );
     }
   }
@@ -278,7 +294,7 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
                             Text('Submitting...', style: TextStyle(fontSize: 16)),
                           ],
                         )
-                      : const Text('Submit Application', style: TextStyle(fontSize: 16)),
+                      : Text(_createdApplicationId == null ? 'Submit Application' : 'Retry CV upload', style: const TextStyle(fontSize: 16)),
                 ),
               ),
             ],

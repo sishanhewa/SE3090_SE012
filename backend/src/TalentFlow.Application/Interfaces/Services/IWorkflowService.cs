@@ -9,7 +9,7 @@ public interface IWorkflowService
 {
     Task<Result<WorkflowExecutionResponse>> StartScreeningWorkflowAsync(
         StartScreeningRequest request, Guid initiatedById, Guid companyId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default, string? authToken = null);
 
     Task<Result<WorkflowExecutionResponse>> GetWorkflowAsync(
         Guid workflowId, CancellationToken cancellationToken = default);
@@ -27,7 +27,7 @@ public interface IWorkflowService
 
     Task<Result<WorkflowExecutionResponse>> RequestRevisionAsync(
         Guid workflowId, Guid decidedById, string comments,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default, string? authToken = null);
 
     Task<Result<WorkflowExecutionResponse>> UpdateWorkflowFromAiAsync(
         AiWorkflowCallbackRequest request,
@@ -37,6 +37,7 @@ public interface IWorkflowService
 public class AiWorkflowCallbackRequest
 {
     public Guid WorkflowId { get; set; }
+    public string? Plan { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? FinalResult { get; set; }
     public string? ErrorDetails { get; set; }

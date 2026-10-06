@@ -45,6 +45,7 @@ export default function InterviewDetailsPage() {
       fetchInterview();
     } catch (error) {
       console.error('Failed to update status', error);
+      alert('Status could not be updated. If this is a proposed interview, check Google Calendar and retry.');
     }
   };
 
@@ -130,6 +131,9 @@ export default function InterviewDetailsPage() {
                 <div className="font-medium whitespace-pre-wrap">{interview.notes}</div>
               </div>
             )}
+            <div className="text-sm" role="status">
+              {interview.calendarInvitationSent ? 'Google Calendar invitation sent to the candidate.' : 'Google Calendar invitation pending.'}
+            </div>
           </CardContent>
         </Card>
 
@@ -141,7 +145,7 @@ export default function InterviewDetailsPage() {
             {interview.status === 'Proposed' && (
               <>
                 <Button className="w-full gap-2" onClick={() => handleUpdateStatus('Scheduled')}>
-                  <CheckCircle className="h-4 w-4" /> Mark as Scheduled
+                  <CheckCircle className="h-4 w-4" /> Send Calendar invitation
                 </Button>
                 <Button variant="destructive" className="w-full gap-2" onClick={handleCancel}>
                   <XCircle className="h-4 w-4" /> Cancel Interview

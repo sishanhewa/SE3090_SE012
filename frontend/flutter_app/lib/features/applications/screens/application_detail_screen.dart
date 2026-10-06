@@ -212,6 +212,7 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
               ),
             ],
             
+            if (_isLoadingOffer) const Center(child: CircularProgressIndicator()),
             if (_offer != null && (_offer!['status'] == 'Sent' || _offer!['status'] == 'Accepted' || _offer!['status'] == 'Rejected')) ...[
               const SizedBox(height: 24),
               const Text(
@@ -416,4 +417,3 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
     );
   }
 }
-

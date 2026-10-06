@@ -61,6 +61,7 @@ public static class DependencyInjection
         services.AddScoped<ICandidateProfileService, CandidateProfileService>();
         services.AddScoped<IInterviewService, InterviewService>();
         services.AddScoped<IOfferService, OfferService>();
+        services.AddScoped<CandidateNotificationService>();
         services.AddScoped<IEmployeeService, EmployeeService>();
 
         // Register Sprint 3 services
@@ -68,14 +69,18 @@ public static class DependencyInjection
         services.AddScoped<ICandidateScoringService, CandidateScoringService>();
         services.AddScoped<ISchedulingService, SchedulingService>();
         services.AddScoped<IWorkflowService, WorkflowService>();
+        services.AddHttpClient<IChatService, ChatService>();
 
         // Google Calendar integration
-        services.AddHttpClient<IGoogleCalendarService, GoogleCalendarService>();
+        services.AddHttpClient<IGoogleCalendarService, GoogleCalendarService>(client =>
+            client.Timeout = TimeSpan.FromSeconds(15));
         
         services.AddHttpClient<IAgentServiceClient, AgentServiceClient>(client =>
         {
-            var aiServiceUrl = configuration.GetValue<string>("AIService:BaseUrl") ?? "http://localhost:8000";
-            client.BaseAddress = new Uri(aiServiceUrl);
+            var aiServiceUrl = Environment.GetEnvironmentVariable("AI_SERVICE_URL")
+                ?? configuration.GetValue<string>("AIService:BaseUrl")
+                ?? "http://localhost:8000";
+            client.BaseAddress = new Uri(aiServiceUrl.TrimEnd('/') + "/");
         });
 
         return services;

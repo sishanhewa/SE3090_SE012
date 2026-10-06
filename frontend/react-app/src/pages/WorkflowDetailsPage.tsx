@@ -12,7 +12,7 @@ export default function WorkflowDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  
+
   const roles = user?.roles ?? [];
   const isManager = roles.some((r) => ['SystemAdmin', 'HiringManager', 'Recruiter'].includes(r));
 
@@ -36,8 +36,18 @@ export default function WorkflowDetailsPage() {
     fetchWorkflow();
   }, [id]);
 
+  useEffect(() => {
+    if (workflow?.status !== 'Planning' && workflow?.status !== 'InProgress') return;
+    const timer = window.setInterval(fetchWorkflow, 3000);
+    return () => window.clearInterval(timer);
+  }, [id, workflow?.status]);
+
   const handleApprove = async () => {
     if (!id) return;
+    if (workflow?.validationResults.some((check) => !check.passed) && !comments.trim()) {
+      alert('Add a review note to explain why you are overriding failed CV checks.');
+      return;
+    }
     try {
       await workflowsApi.approve(id, comments);
       alert('Workflow approved successfully');
@@ -50,9 +60,10 @@ export default function WorkflowDetailsPage() {
 
   const handleReject = async () => {
     if (!id) return;
+    if (!comments.trim()) { alert('Add a reason before rejecting the candidate.'); return; }
     try {
       await workflowsApi.reject(id, comments);
-      alert('Workflow rejected');
+      alert('Candidate rejected and decision recorded.');
       fetchWorkflow();
     } catch (error) {
       console.error('Rejection failed', error);
@@ -67,9 +78,8 @@ export default function WorkflowDetailsPage() {
       return;
     }
     try {
-      await workflowsApi.requestRevision(id, comments);
-      alert('Revision requested');
-      fetchWorkflow();
+      const revised = await workflowsApi.requestRevision(id, comments);
+      navigate(`/workflows/${revised.id}`);
     } catch (error) {
       console.error('Revision request failed', error);
     }
@@ -104,9 +114,9 @@ export default function WorkflowDetailsPage() {
           <h2 className="text-3xl font-bold tracking-tight mb-2">Workflow Execution</h2>
           <p className="text-muted-foreground">Started on {new Date(workflow.createdAt).toLocaleString()}</p>
         </div>
-        <Badge className="text-lg py-1 px-4" variant={
-          workflow.status === 'Completed' || workflow.status === 'Approved' ? 'default' : 
-          workflow.status === 'Failed' || workflow.status === 'Rejected' ? 'destructive' : 
+        <Badge className={`text-sm py-1 px-3 ${workflow.status === 'Approved' || workflow.status === 'Completed' ? 'border-emerald-300 bg-emerald-100 text-emerald-900' : workflow.status === 'Failed' || workflow.status === 'Rejected' ? 'border-red-300 bg-red-100 text-red-900' : 'border-slate-300 bg-slate-100 text-slate-900'}`} variant={
+          workflow.status === 'Completed' || workflow.status === 'Approved' ? 'default' :
+          workflow.status === 'Failed' || workflow.status === 'Rejected' ? 'destructive' :
           workflow.status === 'AwaitingApproval' ? 'secondary' : 'outline'
         }>
           {workflow.status}
@@ -122,12 +132,38 @@ export default function WorkflowDetailsPage() {
         </CardContent>
       </Card>
 
+      {(workflow.status === 'Planning' || workflow.status === 'InProgress') && (
+        <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800" role="status">
+          Screening is running. This page updates automatically as the agents finish.
+        </p>
+      )}
+      {workflow.status === 'Failed' && (
+        <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+          Screening failed: {workflow.errorDetails || 'Check the service logs and retry.'}
+        </p>
+      )}
+      {workflow.errorDetails && workflow.status === 'Approved' && (
+        <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+          {workflow.errorDetails}
+        </p>
+      )}
+
       {parsedResult && (
         <Card className="border-purple-200 bg-purple-50 dark:bg-purple-900/10 dark:border-purple-800">
           <CardHeader>
             <CardTitle className="text-purple-800 dark:text-purple-300">Final Recommendation</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {parsedResult.plan?.steps?.length > 0 && (
+              <div>
+                <span className="font-semibold text-purple-900 dark:text-purple-200 block mb-1">Agent plan:</span>
+                <ol className="list-decimal pl-5 text-sm text-purple-800 dark:text-purple-300">
+                  {parsedResult.plan.steps.map((step: any) => (
+                    <li key={step.step_number}>{step.agent}: {step.task}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
             <div>
               <span className="font-semibold text-purple-900 dark:text-purple-200 block mb-1">Overall Recommendation:</span>
               <p className="text-purple-800 dark:text-purple-300 text-lg font-medium">{parsedResult.overall_recommendation}</p>
@@ -136,7 +172,7 @@ export default function WorkflowDetailsPage() {
               <span className="font-semibold text-purple-900 dark:text-purple-200 block mb-1">AI Summary:</span>
               <p className="text-purple-800 dark:text-purple-300">{parsedResult.summary}</p>
             </div>
-            
+
             {/* Show proposed slots if any */}
             {parsedResult.interview_proposal?.proposed_slots?.length > 0 && (
               <div className="mt-4 p-4 bg-white dark:bg-black/20 rounded-md border border-purple-100 dark:border-purple-800/50">
@@ -165,23 +201,23 @@ export default function WorkflowDetailsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-amber-800 dark:text-amber-300 mb-4">
-              The AI workflow has completed and requires human approval before proceeding (e.g., creating the interview in the calendar and notifying the candidate).
+              Review the CV evidence and validation results. Your shortlist decision will allocate an interview slot; Calendar will send an invitation when configured.
             </p>
-            <Textarea 
-              placeholder="Add comments or feedback (required for revisions)..." 
+            <Textarea
+              placeholder="Decision notes (required for rejection or revision)..."
               value={comments}
               onChange={(e) => setComments(e.target.value)}
               className="bg-white dark:bg-background"
             />
             <div className="flex gap-4 pt-2">
               <Button onClick={handleApprove} className="gap-2 bg-green-600 hover:bg-green-700">
-                <Check className="h-4 w-4" /> Approve & Schedule
+                <Check className="h-4 w-4" /> Approve & Shortlist
               </Button>
               <Button onClick={handleRevise} variant="outline" className="gap-2">
                 <ArrowLeft className="h-4 w-4" /> Request AI Revision
               </Button>
               <Button onClick={handleReject} variant="destructive" className="gap-2">
-                <XCircle className="h-4 w-4" /> Reject
+                <XCircle className="h-4 w-4" /> Reject candidate
               </Button>
             </div>
           </CardContent>
@@ -192,7 +228,7 @@ export default function WorkflowDetailsPage() {
         <div className="space-y-6">
           <h3 className="text-xl font-bold">Execution Timeline (Agent Steps)</h3>
           {workflow.agentSteps.length === 0 ? (
-            <p className="text-muted-foreground italic">No steps recorded.</p>
+            <p className="text-muted-foreground italic">{workflow.status === 'Planning' || workflow.status === 'InProgress' ? 'Agents are still working.' : 'No steps recorded.'}</p>
           ) : (
             <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-muted before:to-transparent">
               {workflow.agentSteps.map((step, idx) => (
@@ -248,7 +284,7 @@ export default function WorkflowDetailsPage() {
                         {step.toolCalls.length > 0 && (
                           <div>
                             <div className="text-xs font-semibold mb-1 text-purple-700 dark:text-purple-400">Tool Payloads:</div>
-                            {step.toolCalls.map((tc, tcIdx) => (
+                            {step.toolCalls.map((tc) => (
                               <div key={tc.id} className="mt-2 text-[10px] border-l-2 border-purple-300 pl-2">
                                 <span className="font-semibold">{tc.toolName}</span> ({tc.durationMs}ms)
                                 {tc.input && (

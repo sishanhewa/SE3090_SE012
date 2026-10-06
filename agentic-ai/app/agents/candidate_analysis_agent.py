@@ -1,22 +1,20 @@
 """Candidate Analysis Agent - Evaluates candidates against job requirements."""
 import structlog
+import re
 from typing import Any, Optional
 
 from app.clients.gemini_client import GeminiClient
 from app.tools.candidate_tools import (
     get_application,
     get_job_requirements,
-    get_candidate_profile,
-    get_candidate_skills,
-    get_candidate_experience,
-    get_candidate_education,
-    get_application_documents,
+    get_application_resume,
 )
 from app.schemas.agent_schemas import (
     CandidateAnalysisInput,
     CandidateAnalysisOutput,
     SkillMatchResult,
 )
+from app.security.tool_permissions import check_tool_permission
 
 logger = structlog.get_logger()
 
@@ -47,10 +45,7 @@ class CandidateAnalysisAgent:
         self.allowed_tools = [
             "get_application",
             "get_job_requirements",
-            "get_candidate_profile",
-            "get_candidate_skills",
-            "get_candidate_experience",
-            "get_application_documents",
+            "get_application_resume",
         ]
         self.gemini_client = gemini_client or GeminiClient()
         self.tool_calls_log: list[dict[str, Any]] = []
@@ -72,59 +67,46 @@ class CandidateAnalysisAgent:
             "get_application",
             get_application, input_data.application_id, auth_token
         )
-        
-        candidate_profile_id = app_data.get("candidate_profile_id") if app_data else input_data.application_id
+        if not app_data:
+            raise ValueError("Application details could not be loaded")
+        if not app_data.get("resume_document_id"):
+            raise ValueError("No CV is attached to this application")
+
+        resume = await self._call_tool(
+            "get_application_resume", get_application_resume, input_data.application_id, auth_token
+        )
+        if not resume:
+            raise ValueError("The attached CV could not be read")
+        cv_text = resume["text"]
 
         job_data = await self._call_tool(
             "get_job_requirements",
             get_job_requirements, input_data.job_id, auth_token
         )
+        if not job_data:
+            raise ValueError("Job requirements could not be loaded")
 
-        profile_data = await self._call_tool(
-            "get_candidate_profile",
-            get_candidate_profile, candidate_profile_id, auth_token
-        )
-
-        skills_data = await self._call_tool(
-            "get_candidate_skills",
-            get_candidate_skills, candidate_profile_id, auth_token
-        )
-
-        experience_data = await self._call_tool(
-            "get_candidate_experience",
-            get_candidate_experience, candidate_profile_id, auth_token
-        )
-
-        education_data = await self._call_tool(
-            "get_candidate_education",
-            get_candidate_education, candidate_profile_id, auth_token
-        )
-
-        documents_data = await self._call_tool(
-            "get_application_documents",
-            get_application_documents, candidate_profile_id, auth_token
-        )
-
-        # Step 2: Match skills
-        job_reqs = job_data.get("skill_requirements", []) if job_data else []
+        # Step 2: Match skills and requirements
+        job_reqs = job_data.get("requirements", []) if job_data else []
         mandatory_matches = self._match_skills(
             job_reqs,
-            skills_data or [],
+            cv_text,
             mandatory_only=True,
         )
 
         preferred_matches = self._match_skills(
             job_reqs,
-            skills_data or [],
+            cv_text,
             mandatory_only=False,
         )
 
         # Step 3: Calculate experience
-        total_experience = self._calculate_experience(experience_data or [])
+        year_mentions = [float(value) for value in re.findall(r"\b(\d{1,2}(?:\.\d)?)\s*\+?\s*(?:years?|yrs?)\b", cv_text, re.IGNORECASE)]
+        total_experience = max(year_mentions, default=0.0)
         min_required = job_data.get("minimum_experience", 0) if job_data else 0
 
         # Step 4: Summarize education
-        education_summary = self._summarize_education(education_data or [])
+        education_summary = "Education evidence in CV requires human review."
 
         # Step 5: Use Gemini for qualitative analysis
         qualitative_analysis = ""
@@ -132,14 +114,9 @@ class CandidateAnalysisAgent:
             analysis_result = await self.gemini_client.analyze_candidate(
                 job_requirements=job_data,
                 candidate_data={
-                    "profile": profile_data,
-                    "skills": skills_data,
-                    "experience": experience_data,
-                    "education": education_data,
-                    "documents": [
-                        {"name": d.get("fileName", ""), "type": d.get("fileType", "")}
-                        for d in (documents_data or [])
-                    ],
+                    "cv_skill_evidence": [m.skill_name for m in mandatory_matches + preferred_matches if m.is_matched],
+                    "cv_years_mentioned": total_experience,
+                    "source": "Applicant CV (personal details withheld)",
                 },
             )
             qualitative_analysis = analysis_result.get("analysis", "")
@@ -151,7 +128,7 @@ class CandidateAnalysisAgent:
         output = CandidateAnalysisOutput(
             application_id=input_data.application_id,
             job_id=input_data.job_id,
-            candidate_name=profile_data.get("summary", "Unknown")[:100] if profile_data else "Unknown",
+            candidate_name=app_data.get("candidate_name", "Unknown")[:100],
             mandatory_skill_matches=mandatory_matches,
             preferred_skill_matches=preferred_matches,
             total_experience_years=total_experience,
@@ -159,7 +136,7 @@ class CandidateAnalysisAgent:
             meets_experience_requirement=total_experience >= min_required,
             education_summary=education_summary,
             qualitative_analysis=qualitative_analysis,
-            evidence_summary=self._build_evidence_summary(
+            evidence_summary=f"Source: applicant CV ({resume['file_name']}). " + self._build_evidence_summary(
                 mandatory_matches, preferred_matches, total_experience, min_required
             ),
         )
@@ -177,6 +154,7 @@ class CandidateAnalysisAgent:
     async def _call_tool(self, tool_name: str, tool_func, *args) -> Any:
         """Call a tool and log the invocation."""
         import time
+        check_tool_permission(self.name, tool_name)
         start = time.time()
         try:
             result = await tool_func(*args)
@@ -201,14 +179,12 @@ class CandidateAnalysisAgent:
     def _match_skills(
         self,
         job_requirements: list[dict],
-        candidate_skills: list[dict],
+        cv_text: str,
         mandatory_only: bool,
     ) -> list[SkillMatchResult]:
         """Match candidate skills against job requirements."""
         matches = []
-        candidate_skill_names = {
-            s.get("skillName", "").lower(): s for s in candidate_skills
-        }
+        normalized_cv = re.sub(r"[^a-z0-9+#.]+", " ", cv_text.lower())
 
         for req in job_requirements:
             is_mandatory = req.get("isMandatory", True)
@@ -217,15 +193,30 @@ class CandidateAnalysisAgent:
             if not mandatory_only and is_mandatory:
                 continue
 
-            skill_name = req.get("skillName", req.get("name", "")).lower()
-            candidate_skill = candidate_skill_names.get(skill_name)
+            desc = req.get("description", req.get("skillName", ""))
+            if desc.startswith("Skill: "):
+                req_skill_name = desc.replace("Skill: ", "").strip().lower()
+                display_name = req_skill_name
+            elif desc.startswith("Minimum Education: "):
+                req_skill_name = desc.lower()
+                display_name = desc
+            else:
+                req_skill_name = desc.lower()
+                display_name = desc
+
+            if desc.lower().startswith("minimum education:"):
+                level = req_skill_name.split(":", 1)[-1].strip()
+                terms = ["bachelor", "bsc"] if "bachelor" in level else ["master", "msc"] if "master" in level else [level]
+                is_matched = any(re.search(r"(?<!\w)" + re.escape(term) + r"(?!\w)", normalized_cv) for term in terms)
+            else:
+                is_matched = bool(re.search(r"(?<!\w)" + re.escape(req_skill_name) + r"(?!\w)", normalized_cv)) if req_skill_name else False
 
             matches.append(SkillMatchResult(
-                skill_name=req.get("skillName", req.get("name", "")),
+                skill_name=display_name,
                 is_mandatory=is_mandatory,
-                is_matched=candidate_skill is not None,
-                candidate_proficiency=candidate_skill.get("proficiencyLevel") if candidate_skill else None,
-                candidate_years=candidate_skill.get("yearsOfExperience", 0) if candidate_skill else 0,
+                is_matched=is_matched,
+                candidate_proficiency=None,
+                candidate_years=0,
                 weight=req.get("weight", 10),
             ))
 

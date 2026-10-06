@@ -3,8 +3,10 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TalentFlow.Application.Common;
 using TalentFlow.Application.Interfaces.Services;
+using TalentFlow.Infrastructure.Persistence;
 
 namespace TalentFlow.Api.Controllers;
 
@@ -17,10 +19,12 @@ namespace TalentFlow.Api.Controllers;
 public class EmployeeSelfController : ControllerBase
 {
     private readonly IEmployeeService _employeeService;
+    private readonly AppDbContext _context;
 
-    public EmployeeSelfController(IEmployeeService employeeService)
+    public EmployeeSelfController(IEmployeeService employeeService, AppDbContext context)
     {
         _employeeService = employeeService;
+        _context = context;
     }
 
     /// <summary>
@@ -47,6 +51,12 @@ public class EmployeeSelfController : ControllerBase
     [HttpGet("{id}/onboarding")]
     public async Task<IActionResult> GetOnboardingTasks(Guid id)
     {
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return Unauthorized();
+        var employee = await _context.Employees.FirstOrDefaultAsync(e => e.Id == id);
+        if (employee == null) return NotFound();
+        if (!User.IsInRole("SystemAdmin") && employee.UserId != userId &&
+            !await _context.CompanyMemberships.AnyAsync(m => m.UserId == userId && m.CompanyId == employee.CompanyId))
+            return Forbid();
         var result = await _employeeService.GetOnboardingTasksAsync(id);
         if (!result.IsSuccess)
             return NotFound(result.Error);

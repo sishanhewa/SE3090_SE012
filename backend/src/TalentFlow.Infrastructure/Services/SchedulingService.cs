@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using TalentFlow.Application.Common;
 using TalentFlow.Application.Interfaces.Services;
 using TalentFlow.Domain.Enums;
@@ -17,10 +18,14 @@ namespace TalentFlow.Infrastructure.Services;
 public class SchedulingService : ISchedulingService
 {
     private readonly AppDbContext _context;
+    private readonly TimeZoneInfo _businessTimeZone;
 
-    public SchedulingService(AppDbContext context)
+    public SchedulingService(AppDbContext context, IConfiguration? configuration = null)
     {
         _context = context;
+        var zoneId = configuration?["Scheduling:TimeZoneId"] ?? "UTC";
+        try { _businessTimeZone = TimeZoneInfo.FindSystemTimeZoneById(zoneId); }
+        catch (TimeZoneNotFoundException) { _businessTimeZone = TimeZoneInfo.Utc; }
     }
 
     public async Task<Result<bool>> HasCandidateConflictAsync(
@@ -65,22 +70,41 @@ public class SchedulingService : ISchedulingService
         int durationMinutes = 60, CancellationToken cancellationToken = default)
     {
         var slots = new List<AvailableSlot>();
+        if (durationMinutes is < 15 or > 480 || rangeEnd <= rangeStart)
+            return Result<List<AvailableSlot>>.Failure("Invalid interview time range or duration.");
 
-        // Generate candidate slots in business hours (9 AM - 5 PM)
-        var current = rangeStart.Date.AddHours(9);
-        while (current.AddMinutes(durationMinutes) <= rangeEnd)
+        // Generate business-hour slots in the configured company time zone, then persist UTC.
+        var localStart = TimeZoneInfo.ConvertTimeFromUtc(rangeStart.ToUniversalTime(), _businessTimeZone);
+        var localEnd = TimeZoneInfo.ConvertTimeFromUtc(rangeEnd.ToUniversalTime(), _businessTimeZone);
+        var currentLocal = localStart.Date.AddHours(9);
+        while (currentLocal.AddMinutes(durationMinutes) <= localEnd)
         {
-            // Skip weekends
-            if (current.DayOfWeek == DayOfWeek.Saturday || current.DayOfWeek == DayOfWeek.Sunday)
+            if (_businessTimeZone.IsInvalidTime(currentLocal))
             {
-                current = current.AddDays(1).Date.AddHours(9);
+                currentLocal = currentLocal.AddHours(1);
+                continue;
+            }
+            var current = TimeZoneInfo.ConvertTimeToUtc(
+                DateTime.SpecifyKind(currentLocal, DateTimeKind.Unspecified), _businessTimeZone);
+            if (current <= DateTime.UtcNow.AddMinutes(30) || current < rangeStart ||
+                current.AddMinutes(durationMinutes) > rangeEnd)
+            {
+                currentLocal = currentLocal.AddHours(1);
+                continue;
+            }
+            // Skip weekends
+            if (currentLocal.DayOfWeek == DayOfWeek.Saturday || currentLocal.DayOfWeek == DayOfWeek.Sunday)
+            {
+                currentLocal = currentLocal.AddDays(1).Date.AddHours(9);
                 continue;
             }
 
             // Skip outside business hours
-            if (current.Hour < 9 || current.Hour >= 17)
+            if (currentLocal.TimeOfDay < TimeSpan.FromHours(9) ||
+                currentLocal.AddMinutes(durationMinutes).Date != currentLocal.Date ||
+                currentLocal.AddMinutes(durationMinutes).TimeOfDay > TimeSpan.FromHours(17))
             {
-                current = current.AddDays(1).Date.AddHours(9);
+                currentLocal = currentLocal.AddDays(1).Date.AddHours(9);
                 continue;
             }
 
@@ -103,7 +127,7 @@ public class SchedulingService : ISchedulingService
                         availableInterviewers.Add(interviewerId);
                 }
 
-                if (availableInterviewers.Any())
+                if (interviewerIds.Count == 0 || availableInterviewers.Count == interviewerIds.Count)
                 {
                     slots.Add(new AvailableSlot
                     {
@@ -115,7 +139,7 @@ public class SchedulingService : ISchedulingService
                 }
             }
 
-            current = current.AddMinutes(60); // Step by 1 hour
+            currentLocal = currentLocal.AddHours(1);
         }
 
         return Result<List<AvailableSlot>>.Success(slots.Take(10).ToList());

@@ -36,24 +36,28 @@ export default function JobDetailsPage() {
   const handlePublish = async () => {
     if (!id || !job?.companyId) return;
     if (!window.confirm('Are you sure you want to publish this job? Once published, candidates will be able to apply.')) return;
-    
+
     try {
       await jobsApi.publish(job.companyId, id);
       fetchDetails();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to publish job', error);
+      const msg = error.response?.data || error.message || 'Failed to publish job';
+      alert(`Could not publish job: ${msg}`);
     }
   };
 
   const handleClose = async () => {
     if (!id || !job?.companyId) return;
     if (!window.confirm('Are you sure you want to close this job? Candidates will no longer be able to apply.')) return;
-    
+
     try {
       await jobsApi.close(job.companyId, id);
       fetchDetails();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to close job', error);
+      const msg = error.response?.data || error.message || 'Failed to close job';
+      alert(`Could not close job: ${msg}`);
     }
   };
 
@@ -73,7 +77,7 @@ export default function JobDetailsPage() {
           Back to Jobs
         </Button>
       </Link>
-      
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card p-6 rounded-lg border shadow-sm">
         <div>
           <div className="flex items-center gap-3 mb-2">
@@ -92,7 +96,7 @@ export default function JobDetailsPage() {
             <span className="flex items-center gap-1"><LayoutDashboard className="h-4 w-4" /> {job.department}</span>
           </div>
         </div>
-        
+
         <div className="flex gap-2">
           {job.status === 'Draft' && (
             <>
@@ -131,6 +135,24 @@ export default function JobDetailsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {job.requirements && job.requirements.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Requirements & Skills</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
+                  {job.requirements.map((req: any, index: number) => (
+                    <li key={index}>
+                      {req.description}
+                      {req.isMandatory && <Badge variant="secondary" className="ml-2 text-[10px]">Mandatory</Badge>}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div className="space-y-6">
@@ -148,16 +170,38 @@ export default function JobDetailsPage() {
                   <p className="text-sm text-muted-foreground">{job.employmentType}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
                   <Briefcase className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Experience Level</p>
-                  <p className="text-sm text-muted-foreground">{job.experienceLevel}</p>
+                  <p className="text-sm font-medium">Experience Needed</p>
+                  <p className="text-sm text-muted-foreground">{job.minimumExperience} Years Minimum</p>
                 </div>
               </div>
+
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Vacancies</p>
+                  <p className="text-sm text-muted-foreground">{job.vacancyCount} Openings</p>
+                </div>
+              </div>
+
+              {job.applicationDeadline && (
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Deadline</p>
+                    <p className="text-sm text-muted-foreground">{new Date(job.applicationDeadline).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              )}
 
               {(job.salaryMin || job.salaryMax) && (
                 <div className="flex items-center gap-3">
@@ -167,8 +211,8 @@ export default function JobDetailsPage() {
                   <div>
                     <p className="text-sm font-medium">Salary Range</p>
                     <p className="text-sm text-muted-foreground">
-                      {job.salaryMin ? `$${job.salaryMin.toLocaleString()}` : ''} 
-                      {job.salaryMin && job.salaryMax ? ' - ' : ''} 
+                      {job.salaryMin ? `$${job.salaryMin.toLocaleString()}` : ''}
+                      {job.salaryMin && job.salaryMax ? ' - ' : ''}
                       {job.salaryMax ? `$${job.salaryMax.toLocaleString()}` : ''}
                     </p>
                   </div>

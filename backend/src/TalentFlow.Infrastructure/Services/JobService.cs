@@ -55,7 +55,7 @@ public class JobService : IJobService
 
     public async Task<Result<JobResponse>> GetJobByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var job = await _jobRepository.GetByIdAsync(id, cancellationToken);
+        var job = await _jobRepository.GetJobWithDetailsAsync(id, cancellationToken);
         if (job == null)
             return Result<JobResponse>.NotFound("Job not found");
 
@@ -189,7 +189,14 @@ public class JobService : IJobService
             CompanyId = job.CompanyId,
             DepartmentId = job.DepartmentId,
             CreatedAt = job.CreatedAt,
-            UpdatedAt = job.UpdatedAt
+            UpdatedAt = job.UpdatedAt,
+            Requirements = job.Requirements?.Select(r => new JobRequirementResponse
+            {
+                Id = r.Id,
+                Description = r.Description,
+                IsMandatory = r.IsMandatory,
+                Weight = r.Weight
+            }).ToList() ?? new List<JobRequirementResponse>()
         };
     }
 }

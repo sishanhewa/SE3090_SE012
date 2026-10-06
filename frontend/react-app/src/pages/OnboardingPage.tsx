@@ -6,16 +6,39 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { CheckSquare, Briefcase, CalendarDays, CheckCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { OnboardingTemplateList, EmployeeOnboardingProgress } from '../components/onboarding/OnboardingManagement';
+import { useAuthStore } from '../store/authStore';
+import { onboardingApi, type OnboardingTemplate } from '../api/onboardingApi';
+import apiClient from '../api/apiClient';
 
 export default function OnboardingPage() {
+  const storedCompanyId = useAuthStore((state) => state.user?.companyId);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const [resolvedCompanyId, setResolvedCompanyId] = useState<string | undefined>(storedCompanyId);
+  let tokenCompanyId: string | undefined;
+  try { tokenCompanyId = accessToken ? JSON.parse(atob(accessToken.split('.')[1])).CompanyId : undefined; }
+  catch { tokenCompanyId = undefined; }
+  const companyId = storedCompanyId ?? tokenCompanyId ?? resolvedCompanyId;
   const [employees, setEmployees] = useState<EmployeeResponse[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeResponse | null>(null);
+  const [templates, setTemplates] = useState<OnboardingTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [taskRefresh, setTaskRefresh] = useState(0);
+
+  useEffect(() => {
+    if (storedCompanyId || tokenCompanyId) { setResolvedCompanyId(storedCompanyId ?? tokenCompanyId); return; }
+    apiClient.get<{ companyId?: string }>('/Auth/me')
+      .then((response) => setResolvedCompanyId(response.data.companyId))
+      .catch(() => setResolvedCompanyId(undefined));
+  }, [storedCompanyId, tokenCompanyId]);
 
   const fetchEmployees = async () => {
+    if (!companyId) { setLoading(false); return; }
     try {
-      const data = await employeesApi.getAll('company-1');
+      const data = await employeesApi.getAll(companyId);
+      const availableTemplates = await onboardingApi.getTemplates(companyId);
+      setTemplates(availableTemplates);
       // Filter only employees in Onboarding status
       setEmployees(data.items.filter((e: EmployeeResponse) => e.status === 'Onboarding'));
     } catch (error) {
@@ -27,19 +50,29 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [companyId]);
 
   const handleCompleteOnboarding = async () => {
-    if (!selectedEmployee) return;
+    if (!selectedEmployee || !companyId) return;
 
     try {
-      await employeesApi.update(selectedEmployee.id, 'company-1', {
+      await employeesApi.update(selectedEmployee.id, companyId, {
         status: 'Active'
       });
       setSelectedEmployee(null);
       fetchEmployees();
     } catch (error) {
       console.error('Failed to complete onboarding', error);
+    }
+  };
+
+  const handleAssignTemplate = async () => {
+    if (!selectedEmployee || !selectedTemplateId) return;
+    try {
+      await onboardingApi.assignTemplate(selectedEmployee.id, selectedTemplateId);
+      setTaskRefresh((value) => value + 1);
+    } catch {
+      alert('Could not assign this template. Tasks may already be assigned.');
     }
   };
 
@@ -122,7 +155,18 @@ export default function OnboardingPage() {
             </div>
 
             {selectedEmployee && (
-              <EmployeeOnboardingProgress employeeId={selectedEmployee.id} />
+              <EmployeeOnboardingProgress employeeId={selectedEmployee.id} refreshKey={taskRefresh} />
+            )}
+
+            {templates.length > 0 && (
+              <div className="flex gap-2">
+                <select className="flex-1 rounded-md border bg-background px-3 py-2" value={selectedTemplateId}
+                  onChange={(event) => setSelectedTemplateId(event.target.value)}>
+                  <option value="">Select onboarding template</option>
+                  {templates.map((template) => <option value={template.id} key={template.id}>{template.name}</option>)}
+                </select>
+                <Button variant="outline" onClick={handleAssignTemplate} disabled={!selectedTemplateId}>Assign tasks</Button>
+              </div>
             )}
 
             <Button 
@@ -135,9 +179,8 @@ export default function OnboardingPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="pt-8 border-t">
-        <OnboardingTemplateList companyId="company-1" />
-      </div>
+      {companyId ? <div className="pt-8 border-t"><OnboardingTemplateList companyId={companyId} onChanged={fetchEmployees} /></div>
+        : <p className="text-sm text-amber-700">Sign in with a company account to manage onboarding.</p>}
     </div>
   );
 }

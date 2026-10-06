@@ -1,10 +1,12 @@
 """TalentFlow AI - Agentic AI Service"""
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 import structlog
 
 from app.schemas.workflow import WorkflowRequest, WorkflowResponse, WorkflowStatusEnum
 from app.graph.workflow_graph import run_screening_workflow
+from app.schemas.chat import ChatRequest, ChatResponse
+from app.graph.chat_graph import run_chat_workflow
 
 logger = structlog.get_logger()
 
@@ -40,6 +42,7 @@ async def root():
 async def start_screening(
     request: WorkflowRequest,
     background_tasks: BackgroundTasks,
+    http_request: Request,
 ):
     """
     Start a recruitment screening workflow.
@@ -67,6 +70,7 @@ async def start_screening(
         _execute_workflow,
         workflow_id,
         request,
+        http_request.headers.get("Authorization", "").removeprefix("Bearer "),
     )
 
     return WorkflowResponse(
@@ -90,6 +94,23 @@ async def get_screening_status(workflow_id: str):
     )
 
 
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat_endpoint(request: ChatRequest, fastapi_request: __import__('fastapi').Request):
+    """Chat endpoint for AI Recruitment Assistant."""
+    auth_header = fastapi_request.headers.get("Authorization")
+    auth_token = auth_header.split(" ")[1] if auth_header and auth_header.startswith("Bearer ") else None
+
+    try:
+        response_text = await run_chat_workflow(
+            messages=request.messages,
+            company_id=request.company_id,
+            auth_token=auth_token,
+        )
+        return ChatResponse(response=response_text)
+    except Exception as e:
+        logger.error("chat_endpoint_failed", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/agents")
 async def list_agents():
     """List available agents and their allowed tools."""
@@ -104,9 +125,8 @@ async def list_agents():
                 "name": "CandidateAnalysisAgent",
                 "owner": "Student 2",
                 "tools": [
-                    "get_job_requirements", "get_candidate_profile",
-                    "get_candidate_skills", "get_candidate_experience",
-                    "get_application_documents",
+                    "get_application", "get_job_requirements",
+                    "get_application_resume",
                 ],
             },
             {
@@ -130,7 +150,7 @@ async def list_agents():
     }
 
 
-async def _execute_workflow(workflow_id: str, request: WorkflowRequest):
+async def _execute_workflow(workflow_id: str, request: WorkflowRequest, auth_token: str = ""):
     """Background task to execute the screening workflow."""
     from app.clients.backend_client import push_workflow_results
 
@@ -141,6 +161,7 @@ async def _execute_workflow(workflow_id: str, request: WorkflowRequest):
             job_id=request.job_id,
             company_id=request.company_id,
             initiated_by=request.initiated_by,
+            auth_token=auth_token,
         )
 
         _workflow_cache[workflow_id] = {
@@ -158,7 +179,7 @@ async def _execute_workflow(workflow_id: str, request: WorkflowRequest):
         # Push results back to the .NET backend database
         # Use the ORIGINAL workflow_id from the backend request
         backend_workflow_id = request.workflow_id if hasattr(request, 'workflow_id') and request.workflow_id else workflow_id
-        await push_workflow_results(backend_workflow_id, result)
+        await push_workflow_results(backend_workflow_id, result, auth_token)
 
     except Exception as e:
         logger.error(
@@ -178,5 +199,4 @@ async def _execute_workflow(workflow_id: str, request: WorkflowRequest):
         await push_workflow_results(backend_workflow_id, {
             "status": WorkflowStatusEnum.FAILED.value,
             "error": str(e),
-        })
-
+        }, auth_token)

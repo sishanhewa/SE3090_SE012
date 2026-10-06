@@ -22,9 +22,10 @@ import {
 // ── Template List ──
 interface OnboardingTemplateListProps {
   companyId: string;
+  onChanged?: () => void;
 }
 
-export function OnboardingTemplateList({ companyId }: OnboardingTemplateListProps) {
+export function OnboardingTemplateList({ companyId, onChanged }: OnboardingTemplateListProps) {
   const [templates, setTemplates] = useState<OnboardingTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -61,6 +62,7 @@ export function OnboardingTemplateList({ companyId }: OnboardingTemplateListProp
           onCreated={() => {
             setShowCreate(false);
             fetchTemplates();
+            onChanged?.();
           }}
           onCancel={() => setShowCreate(false)}
         />
@@ -256,9 +258,10 @@ function CreateTemplateForm({ companyId, onCreated, onCancel }: CreateTemplateFo
 // ── Employee Onboarding Progress ──
 interface EmployeeOnboardingProgressProps {
   employeeId: string;
+  refreshKey?: number;
 }
 
-export function EmployeeOnboardingProgress({ employeeId }: EmployeeOnboardingProgressProps) {
+export function EmployeeOnboardingProgress({ employeeId, refreshKey }: EmployeeOnboardingProgressProps) {
   const [tasks, setTasks] = useState<EmployeeOnboardingTask[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -276,11 +279,11 @@ export function EmployeeOnboardingProgress({ employeeId }: EmployeeOnboardingPro
 
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks]);
+  }, [fetchTasks, refreshKey]);
 
   const handleComplete = async (taskId: string) => {
     try {
-      await onboardingApi.completeTask(employeeId, taskId);
+      await onboardingApi.completeTask(taskId);
       fetchTasks();
     } catch {
       alert('Failed to complete task.');

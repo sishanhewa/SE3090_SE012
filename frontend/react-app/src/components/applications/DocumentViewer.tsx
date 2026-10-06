@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   useApplicationDocuments,
   applicationDetailsApi,
@@ -55,12 +55,35 @@ export default function DocumentViewer({ applicationId, canUpload = false }: Doc
     }
   };
 
-  const handlePreview = (doc: DocumentItem) => {
-    if (doc.fileName.endsWith('.pdf')) {
-      setPreviewUrl(doc.fileUrl);
-    } else {
-      // For non-PDF files, just download
-      window.open(doc.fileUrl, '_blank');
+  useEffect(() => () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
+
+  const handlePreview = async (doc: DocumentItem) => {
+    try {
+      const blob = await applicationDetailsApi.downloadDocument(applicationId, doc.id);
+      const url = URL.createObjectURL(blob);
+      if (doc.fileName.toLowerCase().endsWith('.pdf')) setPreviewUrl(url);
+      else {
+        window.open(url, '_blank', 'noopener,noreferrer');
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      }
+    } catch {
+      alert('Unable to open the CV. Please try again.');
+    }
+  };
+
+  const handleDownload = async (doc: DocumentItem) => {
+    try {
+      const blob = await applicationDetailsApi.downloadDocument(applicationId, doc.id);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.fileName;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch {
+      alert('Unable to download the CV. Please try again.');
     }
   };
 
@@ -75,7 +98,7 @@ export default function DocumentViewer({ applicationId, canUpload = false }: Doc
                 type="file"
                 id="doc-upload"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                accept=".pdf,.docx,.jpg,.jpeg,.png"
                 onChange={handleUpload}
                 disabled={uploading}
               />
@@ -129,7 +152,7 @@ export default function DocumentViewer({ applicationId, canUpload = false }: Doc
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => window.open(doc.fileUrl, '_blank')}
+                      onClick={() => handleDownload(doc)}
                       title="Download"
                     >
                       <Download className="h-4 w-4" />

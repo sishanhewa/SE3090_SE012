@@ -1,9 +1,16 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
-  static const String baseUrl = 'https://localhost:5001/api';
+  static const String _configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
+  static String get baseUrl => _configuredBaseUrl.isNotEmpty
+      ? _configuredBaseUrl
+      : kIsWeb || !Platform.isAndroid
+          ? 'http://localhost:5155/api'
+          : 'http://10.0.2.2:5155/api';
 
   Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();

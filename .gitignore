@@ -103,6 +103,7 @@ Desktop.ini
 *.key
 appsettings.Production.json
 appsettings.Staging.json
+backend/src/TalentFlow.Api/appsettings.Development.local.json
 
 # ===========================
 # Docker

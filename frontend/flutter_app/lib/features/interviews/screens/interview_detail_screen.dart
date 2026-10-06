@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../core/api/api_client.dart';
+import '../../../core/api/api_client.dart';
 
 class InterviewDetailScreen extends StatefulWidget {
   final String interviewId;
@@ -77,6 +77,9 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                     const Text('Status', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     Text(_interview!['status'], style: const TextStyle(fontSize: 16)),
+                    if (_interview!['status'] == 'Proposed')
+                      const Text('This time is tentative until you receive a calendar invitation.',
+                          style: TextStyle(color: Colors.orange)),
                     const Divider(height: 24),
                     
                     const Text('Scheduled At', style: TextStyle(fontWeight: FontWeight.bold)),

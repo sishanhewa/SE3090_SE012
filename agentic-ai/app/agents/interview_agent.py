@@ -58,6 +58,14 @@ class InterviewAgent:
             interviewer_count=len(input_data.interviewer_ids),
         )
 
+        if not input_data.screening_eligible:
+            return InterviewSchedulingOutput(
+                application_id=input_data.application_id,
+                proposed_slots=[],
+                recommendation="No interview slot proposed because screening checks need human review.",
+                notes="The recruiter can still override the recommendation with a recorded reason.",
+            )
+
         # Determine date range (default: next 7 business days)
         if input_data.preferred_date_range_start:
             range_start = input_data.preferred_date_range_start
@@ -69,27 +77,22 @@ class InterviewAgent:
         else:
             range_end = (datetime.utcnow() + timedelta(days=10)).isoformat()
 
-        # Step 0: Resolve candidate profile ID from application ID
-        from app.tools.candidate_tools import get_application
-        
-        try:
-            app_data = await self._call_tool(
-                "get_application",
-                get_application, input_data.application_id, auth_token
-            )
-            candidate_profile_id = app_data.get("candidate_profile_id") if app_data else input_data.candidate_profile_id
-        except Exception:
-            candidate_profile_id = input_data.candidate_profile_id
-
-        # Step 1: Check candidate availability
+        # Step 1: Check the candidate's existing interviews through the backend.
         candidate_availability = await self._call_tool(
             "get_candidate_availability",
             get_candidate_availability,
-            candidate_profile_id,
+            input_data.application_id,
             range_start,
             range_end,
             auth_token,
         )
+        if candidate_availability is None:
+            return InterviewSchedulingOutput(
+                application_id=input_data.application_id,
+                proposed_slots=[],
+                recommendation="Scheduling needs manual review because existing interviews could not be checked.",
+                notes="No availability was assumed after a tool failure.",
+            )
 
         # Step 2: Check each interviewer's availability
         interviewer_availabilities = []
@@ -105,7 +108,7 @@ class InterviewAgent:
             interviewer_availabilities.append(avail or {})
 
         # Step 3: Check Google Calendar (optional)
-        all_user_ids = [input_data.candidate_profile_id] + input_data.interviewer_ids
+        all_user_ids = input_data.interviewer_ids
         calendar_data = await self._call_tool(
             "get_calendar_availability",
             get_calendar_availability,
@@ -139,7 +142,7 @@ class InterviewAgent:
                 start_time=s["start_time"],
                 end_time=s["end_time"],
                 available_interviewers=input_data.interviewer_ids,
-                all_available=True,
+                all_available=False,
             )
             for s in slots
         ]
@@ -160,13 +163,13 @@ class InterviewAgent:
             application_id=input_data.application_id,
             proposed_slots=proposed_slots,
             recommendation=(
-                f"Found {len(proposed_slots)} available slot(s) for interview."
+                f"Found {len(proposed_slots)} tentative internal slot(s); external availability is checked before invitation."
                 if proposed_slots
                 else "No available slots found in the requested date range."
             ),
             notes=(
-                "Google Calendar integration not yet active. "
-                "Slots based on internal schedule only."
+                "Google Calendar availability is checked by the backend at scheduling time. "
+                "Candidate availability outside TalentFlow is unverified."
                 if calendar_data and not calendar_data.get("calendar_connected")
                 else ""
             ),

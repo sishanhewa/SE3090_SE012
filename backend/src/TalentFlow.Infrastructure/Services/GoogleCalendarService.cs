@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -16,8 +18,8 @@ namespace TalentFlow.Infrastructure.Services;
 
 /// <summary>
 /// Google Calendar integration using Google Calendar API v3.
-/// Uses a Service Account for server-to-server authentication.
-/// Falls back gracefully if credentials are not configured.
+/// Uses either an organizer OAuth refresh token or Workspace service account delegation.
+/// Reports configuration and API failures explicitly so invitations are never mistaken for sent.
 /// </summary>
 public class GoogleCalendarService : IGoogleCalendarService
 {
@@ -37,14 +39,20 @@ public class GoogleCalendarService : IGoogleCalendarService
         _logger = logger;
         _httpClient = httpClient;
 
-        _isEnabled = !string.IsNullOrWhiteSpace(
-            _configuration["GoogleCalendar:ServiceAccountEmail"]);
+        var workspaceCredentials = !string.IsNullOrWhiteSpace(_configuration["GoogleCalendar:ServiceAccountEmail"])
+            && !string.IsNullOrWhiteSpace(_configuration["GoogleCalendar:PrivateKey"])
+            && !string.IsNullOrWhiteSpace(_configuration["GoogleCalendar:DelegatedUserEmail"]);
+        var organizerCredentials = !string.IsNullOrWhiteSpace(_configuration["GoogleCalendar:OAuthClientId"])
+            && !string.IsNullOrWhiteSpace(_configuration["GoogleCalendar:OAuthClientSecret"])
+            && !string.IsNullOrWhiteSpace(_configuration["GoogleCalendar:OAuthRefreshToken"]);
+        _isEnabled = !string.IsNullOrWhiteSpace(_configuration["GoogleCalendar:CalendarId"])
+            && (workspaceCredentials || organizerCredentials);
 
         if (!_isEnabled)
         {
             _logger.LogWarning(
                 "Google Calendar integration is disabled. " +
-                "Set GoogleCalendar:ServiceAccountEmail and GoogleCalendar:PrivateKey in configuration to enable.");
+                "Set a Calendar ID and organizer OAuth credentials, or Workspace service account delegation, to enable invitations.");
         }
     }
 
@@ -54,15 +62,7 @@ public class GoogleCalendarService : IGoogleCalendarService
     {
         if (!_isEnabled)
         {
-            _logger.LogInformation("Google Calendar disabled — returning mock event for interview: {Title}", request.Title);
-            return Result<CalendarEventResult>.Success(new CalendarEventResult
-            {
-                EventId = $"mock-event-{Guid.NewGuid():N}",
-                HtmlLink = $"https://calendar.google.com/calendar/event?eid=mock-{Guid.NewGuid():N}",
-                MeetLink = request.MeetingUrl,
-                StartTime = request.StartTime,
-                EndTime = request.EndTime
-            });
+            return Result<CalendarEventResult>.Failure("Google Calendar is not configured.");
         }
 
         try
@@ -70,15 +70,16 @@ public class GoogleCalendarService : IGoogleCalendarService
             var calendarId = _configuration["GoogleCalendar:CalendarId"] ?? "primary";
             var accessToken = await GetAccessTokenAsync(cancellationToken);
 
-            var calendarEvent = new
+            var calendarEvent = new Dictionary<string, object?>
             {
-                summary = request.Title,
-                description = request.Description,
-                location = request.Location,
-                start = new { dateTime = request.StartTime.ToString("o"), timeZone = "UTC" },
-                end_ = new { dateTime = request.EndTime.ToString("o"), timeZone = "UTC" },
-                attendees = request.AttendeeEmails.ConvertAll(email => new { email }),
-                conferenceData = new
+                ["id"] = request.EventId,
+                ["summary"] = request.Title,
+                ["description"] = request.Description,
+                ["location"] = request.Location,
+                ["start"] = new { dateTime = request.StartTime.ToUniversalTime().ToString("o"), timeZone = "UTC" },
+                ["end"] = new { dateTime = request.EndTime.ToUniversalTime().ToString("o"), timeZone = "UTC" },
+                ["attendees"] = request.AttendeeEmails.ConvertAll(email => new { email }),
+                ["conferenceData"] = new
                 {
                     createRequest = new
                     {
@@ -86,7 +87,7 @@ public class GoogleCalendarService : IGoogleCalendarService
                         conferenceSolutionKey = new { type = "hangoutsMeet" }
                     }
                 },
-                reminders = new
+                ["reminders"] = new
                 {
                     useDefault = false,
                     overrides = new[]
@@ -110,6 +111,17 @@ public class GoogleCalendarService : IGoogleCalendarService
 
             var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
 
+            // A client-chosen event ID makes retries safe when Google created the event
+            // but the original response was lost on the network.
+            if (response.StatusCode == System.Net.HttpStatusCode.Conflict &&
+                !string.IsNullOrWhiteSpace(request.EventId))
+            {
+                using var existingRequest = new HttpRequestMessage(HttpMethod.Get,
+                    $"{CalendarApiBase}/calendars/{Uri.EscapeDataString(calendarId)}/events/{Uri.EscapeDataString(request.EventId)}");
+                existingRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                response = await _httpClient.SendAsync(existingRequest, cancellationToken);
+            }
+
             if (!response.IsSuccessStatusCode)
             {
                 var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -122,6 +134,16 @@ public class GoogleCalendarService : IGoogleCalendarService
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
             using var doc = JsonDocument.Parse(responseBody);
             var root = doc.RootElement;
+            if (root.TryGetProperty("start", out var actualStart) &&
+                actualStart.TryGetProperty("dateTime", out var actualStartValue) &&
+                DateTimeOffset.TryParse(actualStartValue.GetString(), out var actualStartTime) &&
+                Math.Abs((actualStartTime.UtcDateTime - request.StartTime.ToUniversalTime()).TotalMinutes) > 1)
+                return Result<CalendarEventResult>.Failure("An existing Calendar event has a different interview time.");
+            if (!root.TryGetProperty("attendees", out var actualAttendees) ||
+                request.AttendeeEmails.Any(email => !actualAttendees.EnumerateArray().Any(attendee =>
+                    attendee.TryGetProperty("email", out var address) &&
+                    string.Equals(address.GetString(), email, StringComparison.OrdinalIgnoreCase))))
+                return Result<CalendarEventResult>.Failure("Google Calendar did not confirm the candidate invitation.");
 
             var result = new CalendarEventResult
             {
@@ -130,6 +152,8 @@ public class GoogleCalendarService : IGoogleCalendarService
                 StartTime = request.StartTime,
                 EndTime = request.EndTime
             };
+            if (string.IsNullOrWhiteSpace(result.EventId))
+                return Result<CalendarEventResult>.Failure("Google Calendar did not return an event ID.");
 
             // Try to get Google Meet link
             if (root.TryGetProperty("conferenceData", out var confData) &&
@@ -146,19 +170,13 @@ public class GoogleCalendarService : IGoogleCalendarService
                 }
             }
 
-            _logger.LogInformation("Created Google Calendar event {EventId} for: {Title}", result.EventId, request.Title);
+            _logger.LogInformation("Confirmed Google Calendar event {EventId} for: {Title}", result.EventId, request.Title);
             return Result<CalendarEventResult>.Success(result);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create Google Calendar event for: {Title}", request.Title);
-            // Graceful fallback — don't fail the interview creation
-            return Result<CalendarEventResult>.Success(new CalendarEventResult
-            {
-                EventId = $"failed-{Guid.NewGuid():N}",
-                StartTime = request.StartTime,
-                EndTime = request.EndTime
-            });
+            return Result<CalendarEventResult>.Failure("Google Calendar invitation could not be created.");
         }
     }
 
@@ -168,13 +186,7 @@ public class GoogleCalendarService : IGoogleCalendarService
     {
         if (!_isEnabled || eventId.StartsWith("mock-") || eventId.StartsWith("failed-"))
         {
-            _logger.LogInformation("Google Calendar disabled — skipping update for event: {EventId}", eventId);
-            return Result<CalendarEventResult>.Success(new CalendarEventResult
-            {
-                EventId = eventId,
-                StartTime = request.StartTime,
-                EndTime = request.EndTime
-            });
+            return Result<CalendarEventResult>.Failure("Google Calendar is not configured for this event.");
         }
 
         try
@@ -182,14 +194,14 @@ public class GoogleCalendarService : IGoogleCalendarService
             var calendarId = _configuration["GoogleCalendar:CalendarId"] ?? "primary";
             var accessToken = await GetAccessTokenAsync(cancellationToken);
 
-            var updatePayload = new
+            var updatePayload = new Dictionary<string, object?>
             {
-                summary = request.Title,
-                description = request.Description,
-                location = request.Location,
-                start = new { dateTime = request.StartTime.ToString("o"), timeZone = "UTC" },
-                end_ = new { dateTime = request.EndTime.ToString("o"), timeZone = "UTC" },
-                attendees = request.AttendeeEmails.ConvertAll(email => new { email })
+                ["summary"] = request.Title,
+                ["description"] = request.Description,
+                ["location"] = request.Location,
+                ["start"] = new { dateTime = request.StartTime.ToUniversalTime().ToString("o"), timeZone = "UTC" },
+                ["end"] = new { dateTime = request.EndTime.ToUniversalTime().ToString("o"), timeZone = "UTC" },
+                ["attendees"] = request.AttendeeEmails.ConvertAll(email => new { email })
             };
 
             var json = JsonSerializer.Serialize(updatePayload, new JsonSerializerOptions
@@ -224,12 +236,7 @@ public class GoogleCalendarService : IGoogleCalendarService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update Google Calendar event: {EventId}", eventId);
-            return Result<CalendarEventResult>.Success(new CalendarEventResult
-            {
-                EventId = eventId,
-                StartTime = request.StartTime,
-                EndTime = request.EndTime
-            });
+            return Result<CalendarEventResult>.Failure("Google Calendar invitation could not be updated.");
         }
     }
 
@@ -238,8 +245,8 @@ public class GoogleCalendarService : IGoogleCalendarService
     {
         if (!_isEnabled || eventId.StartsWith("mock-") || eventId.StartsWith("failed-"))
         {
-            _logger.LogInformation("Google Calendar disabled — skipping delete for event: {EventId}", eventId);
-            return Result.Success();
+            return eventId.StartsWith("mock-") || eventId.StartsWith("failed-")
+                ? Result.Success() : Result.Failure("Google Calendar is not configured for this event.");
         }
 
         try
@@ -256,6 +263,7 @@ public class GoogleCalendarService : IGoogleCalendarService
             if (!response.IsSuccessStatusCode && response.StatusCode != System.Net.HttpStatusCode.NotFound)
             {
                 _logger.LogWarning("Failed to delete calendar event {EventId}: {StatusCode}", eventId, response.StatusCode);
+                return Result.Failure("Google Calendar cancellation could not be sent.");
             }
 
             return Result.Success();
@@ -263,7 +271,7 @@ public class GoogleCalendarService : IGoogleCalendarService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to delete Google Calendar event: {EventId}", eventId);
-            return Result.Success(); // Don't fail operations because calendar cleanup failed
+            return Result.Failure("Google Calendar cancellation could not be sent.");
         }
     }
 
@@ -273,7 +281,7 @@ public class GoogleCalendarService : IGoogleCalendarService
     {
         if (!_isEnabled)
         {
-            return Result<List<CalendarBusySlot>>.Success(new List<CalendarBusySlot>());
+            return Result<List<CalendarBusySlot>>.Failure("Google Calendar availability is not configured.");
         }
 
         try
@@ -302,7 +310,7 @@ public class GoogleCalendarService : IGoogleCalendarService
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("FreeBusy query failed for {Email}: {StatusCode}", email, response.StatusCode);
-                return Result<List<CalendarBusySlot>>.Success(new List<CalendarBusySlot>());
+                return Result<List<CalendarBusySlot>>.Failure("Google Calendar availability could not be checked.");
             }
 
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -315,43 +323,58 @@ public class GoogleCalendarService : IGoogleCalendarService
                 calendars.TryGetProperty(email, out var calendarData) &&
                 calendarData.TryGetProperty("busy", out var busyArray))
             {
+                if (calendarData.TryGetProperty("errors", out var errors) && errors.GetArrayLength() > 0)
+                    return Result<List<CalendarBusySlot>>.Failure("Google Calendar did not return reliable availability.");
                 foreach (var slot in busyArray.EnumerateArray())
                 {
                     busySlots.Add(new CalendarBusySlot
                     {
-                        Start = DateTime.Parse(slot.GetProperty("start").GetString()!),
-                        End = DateTime.Parse(slot.GetProperty("end").GetString()!)
+                        Start = DateTimeOffset.Parse(slot.GetProperty("start").GetString()!).UtcDateTime,
+                        End = DateTimeOffset.Parse(slot.GetProperty("end").GetString()!).UtcDateTime
                     });
                 }
             }
 
+            else return Result<List<CalendarBusySlot>>.Failure("Google Calendar did not return availability for this calendar.");
             return Result<List<CalendarBusySlot>>.Success(busySlots);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to query free/busy for: {Email}", email);
-            return Result<List<CalendarBusySlot>>.Success(new List<CalendarBusySlot>());
+            return Result<List<CalendarBusySlot>>.Failure("Google Calendar availability could not be checked.");
         }
     }
 
     /// <summary>
-    /// Gets an OAuth2 access token using the service account credentials.
-    /// In production, this would use Google.Apis.Auth to create a JWT and exchange it.
-    /// For simplicity, we use the API key approach or a pre-configured token.
+    /// Gets a short-lived access token using a server-held organizer refresh token or
+    /// a delegated Workspace service account. No long-lived secret is sent to clients.
     /// </summary>
     private async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
     {
-        // If a static API key or pre-configured OAuth token is available, use it
-        var apiKey = _configuration["GoogleCalendar:ApiKey"];
-        if (!string.IsNullOrWhiteSpace(apiKey))
+        var oauthClientId = _configuration["GoogleCalendar:OAuthClientId"];
+        var oauthClientSecret = _configuration["GoogleCalendar:OAuthClientSecret"];
+        var oauthRefreshToken = _configuration["GoogleCalendar:OAuthRefreshToken"];
+        if (!string.IsNullOrWhiteSpace(oauthClientId) && !string.IsNullOrWhiteSpace(oauthClientSecret)
+            && !string.IsNullOrWhiteSpace(oauthRefreshToken))
         {
-            return apiKey;
+            using var refreshResponse = await _httpClient.PostAsync(
+                "https://oauth2.googleapis.com/token",
+                new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["client_id"] = oauthClientId,
+                    ["client_secret"] = oauthClientSecret,
+                    ["refresh_token"] = oauthRefreshToken,
+                    ["grant_type"] = "refresh_token"
+                }), cancellationToken);
+            refreshResponse.EnsureSuccessStatusCode();
+            using var refreshDocument = JsonDocument.Parse(
+                await refreshResponse.Content.ReadAsStringAsync(cancellationToken));
+            if (refreshDocument.RootElement.TryGetProperty("access_token", out var refreshedToken)
+                && !string.IsNullOrWhiteSpace(refreshedToken.GetString()))
+                return refreshedToken.GetString()!;
+            throw new InvalidOperationException("Google OAuth did not return an access token.");
         }
 
-        // For service account JWT flow (production):
-        // 1. Build a JWT assertion signed with the private key
-        // 2. Exchange it at https://oauth2.googleapis.com/token
-        // This requires Google.Apis.Auth NuGet package
         var serviceAccountEmail = _configuration["GoogleCalendar:ServiceAccountEmail"];
         var privateKey = _configuration["GoogleCalendar:PrivateKey"];
 
@@ -359,10 +382,9 @@ public class GoogleCalendarService : IGoogleCalendarService
         {
             throw new InvalidOperationException(
                 "Google Calendar credentials not configured. " +
-                "Set GoogleCalendar:ServiceAccountEmail and GoogleCalendar:PrivateKey or GoogleCalendar:ApiKey.");
+                "Set organizer OAuth credentials or Workspace service account delegation.");
         }
 
-        // Simplified token exchange — in production use Google.Apis.Auth.OAuth2.ServiceAccountCredential
         var tokenRequest = new Dictionary<string, string>
         {
             ["grant_type"] = "urn:ietf:params:oauth:grant-type:jwt-bearer",
@@ -374,6 +396,7 @@ public class GoogleCalendarService : IGoogleCalendarService
             new FormUrlEncodedContent(tokenRequest),
             cancellationToken);
 
+        tokenResponse.EnsureSuccessStatusCode();
         var tokenBody = await tokenResponse.Content.ReadAsStringAsync(cancellationToken);
         using var tokenDoc = JsonDocument.Parse(tokenBody);
 
@@ -385,21 +408,26 @@ public class GoogleCalendarService : IGoogleCalendarService
         throw new InvalidOperationException("Failed to obtain Google Calendar access token.");
     }
 
-    private static string BuildServiceAccountJwt(string serviceAccountEmail, string privateKey)
+    private string BuildServiceAccountJwt(string serviceAccountEmail, string privateKey)
     {
-        // This is a placeholder for the JWT construction.
-        // In production, use Google.Apis.Auth.OAuth2.ServiceAccountCredential
-        // or manually build a JWT with the RS256 algorithm.
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var header = Convert.ToBase64String(
-            Encoding.UTF8.GetBytes("{\"alg\":\"RS256\",\"typ\":\"JWT\"}"));
-        var claims = Convert.ToBase64String(Encoding.UTF8.GetBytes(
-            $"{{\"iss\":\"{serviceAccountEmail}\"," +
-            $"\"scope\":\"https://www.googleapis.com/auth/calendar\"," +
-            $"\"aud\":\"https://oauth2.googleapis.com/token\"," +
-            $"\"iat\":{now},\"exp\":{now + 3600}}}"));
-
-        // In production, sign with RSA private key
-        return $"{header}.{claims}.placeholder-signature";
+        var claims = new Dictionary<string, object>
+        {
+            ["iss"] = serviceAccountEmail,
+            ["scope"] = "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.events.freebusy",
+            ["aud"] = "https://oauth2.googleapis.com/token",
+            ["iat"] = now,
+            ["exp"] = now + 3600
+        };
+        var delegatedUser = _configuration["GoogleCalendar:DelegatedUserEmail"];
+        if (!string.IsNullOrWhiteSpace(delegatedUser)) claims["sub"] = delegatedUser;
+        static string Encode(byte[] bytes) => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        var header = Encode(Encoding.UTF8.GetBytes("{\"alg\":\"RS256\",\"typ\":\"JWT\"}"));
+        var body = Encode(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(claims)));
+        var unsigned = $"{header}.{body}";
+        using var rsa = RSA.Create();
+        rsa.ImportFromPem(privateKey.Replace("\\n", "\n"));
+        var signature = rsa.SignData(Encoding.UTF8.GetBytes(unsigned), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        return $"{unsigned}.{Encode(signature)}";
     }
 }

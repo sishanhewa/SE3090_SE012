@@ -43,7 +43,7 @@ class _MyInterviewsScreenState extends State<MyInterviewsScreen> {
     switch (status) {
       case 'Proposed':
         return Colors.blue;
-      case 'Confirmed':
+      case 'Scheduled':
         return Colors.teal;
       case 'InProgress':
         return Colors.orange;
@@ -60,7 +60,7 @@ class _MyInterviewsScreenState extends State<MyInterviewsScreen> {
     switch (status) {
       case 'Proposed':
         return Icons.schedule;
-      case 'Confirmed':
+      case 'Scheduled':
         return Icons.check_circle_outline;
       case 'InProgress':
         return Icons.videocam;
@@ -139,6 +139,11 @@ class _MyInterviewsScreenState extends State<MyInterviewsScreen> {
                                       ),
                                     ),
                                   ),
+                                  if (status == 'Proposed')
+                                    const Padding(
+                                      padding: EdgeInsets.only(left: 8),
+                                      child: Text('Invite pending', style: TextStyle(fontSize: 11, color: Colors.orange)),
+                                    ),
                                   const Spacer(),
                                   Text(
                                     '${duration}min',

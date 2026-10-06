@@ -31,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      context.go('/jobs');
+      context.go('/home');
     } else {
       setState(() {
         _errorMessage = 'Invalid email or password';

@@ -8,8 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Users, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useCompanyId } from '../hooks/useCompanyId';
 
 export default function EmployeesPage() {
+  const companyId = useCompanyId();
   const [employees, setEmployees] = useState<EmployeeResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,8 +25,9 @@ export default function EmployeesPage() {
   });
 
   const fetchData = async () => {
+    if (!companyId) { setLoading(false); return; }
     try {
-      const data = await employeesApi.getAll('company-1');
+      const data = await employeesApi.getAll(companyId);
       setEmployees(data.items);
     } catch (error) {
       console.error('Failed to fetch employees', error);
@@ -35,12 +38,13 @@ export default function EmployeesPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [companyId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!companyId) return;
     try {
-      await employeesApi.create('company-1', {
+      await employeesApi.create(companyId, {
         ...formData,
         startDate: new Date(formData.startDate).toISOString()
       });

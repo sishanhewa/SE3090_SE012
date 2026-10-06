@@ -6,6 +6,7 @@ import { jobsApi } from '../api/jobsApi';
 import { applicationsApi } from '../api/applicationsApi';
 import { interviewsApi } from '../api/interviewsApi';
 import { employeesApi } from '../api/employeesApi';
+import { useCompanyId } from '../hooks/useCompanyId';
 
 const staffCards = [
   { label: 'Active Jobs', icon: Briefcase, color: 'text-blue-600 bg-blue-50', to: '/jobs' },
@@ -21,32 +22,33 @@ const candidateCards = [
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const companyId = useCompanyId();
   const roles = user?.roles ?? [];
   const isStaff = roles.some((r) => ['SystemAdmin', 'Recruiter', 'HiringManager'].includes(r));
   const isCandidate = roles.includes('Candidate');
 
-  const [stats, setStats] = useState({
-    jobs: 0,
-    applications: 0,
-    interviews: 0,
-    employees: 0,
+  const [stats, setStats] = useState<{ jobs: number | null; applications: number | null; interviews: number | null; employees: number | null }>({
+    jobs: null,
+    applications: null,
+    interviews: null,
+    employees: null,
   });
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         if (isStaff) {
-          const [jobsData, appsData, interviewsData, employeesData] = await Promise.all([
+          const [jobsData, appsData, interviewsData, employeesData] = await Promise.allSettled([
             jobsApi.getAll(),
             applicationsApi.getAll(),
             interviewsApi.getAll(),
-            employeesApi.getAll('company-1')
+            companyId ? employeesApi.getAll(companyId) : Promise.resolve(null),
           ]);
           setStats({
-            jobs: jobsData.length,
-            applications: appsData.length,
-            interviews: interviewsData.length,
-            employees: employeesData.items ? employeesData.items.length : 0,
+            jobs: jobsData.status === 'fulfilled' ? jobsData.value.filter((job) => job.status === 'Published').length : null,
+            applications: appsData.status === 'fulfilled' ? appsData.value.length : null,
+            interviews: interviewsData.status === 'fulfilled' ? interviewsData.value.length : null,
+            employees: employeesData.status === 'fulfilled' && employeesData.value ? employeesData.value.items.length : null,
           });
         } else if (isCandidate) {
           const appsData = await applicationsApi.getMine();
@@ -60,7 +62,7 @@ export default function DashboardPage() {
       }
     };
     fetchStats();
-  }, [isStaff, isCandidate]);
+  }, [isStaff, isCandidate, companyId]);
 
   const cards = isStaff ? staffCards : isCandidate ? candidateCards : [];
 
@@ -84,10 +86,10 @@ export default function DashboardPage() {
           const Icon = card.icon;
           
           let displayCount = '—';
-          if (card.label.includes('Jobs')) displayCount = stats.jobs.toString();
-          if (card.label.includes('Applications')) displayCount = stats.applications.toString();
-          if (card.label.includes('Interviews')) displayCount = stats.interviews.toString();
-          if (card.label.includes('Employees')) displayCount = stats.employees.toString();
+          if (card.label.includes('Jobs')) displayCount = stats.jobs?.toString() ?? '—';
+          if (card.label.includes('Applications')) displayCount = stats.applications?.toString() ?? '—';
+          if (card.label.includes('Interviews')) displayCount = stats.interviews?.toString() ?? '—';
+          if (card.label.includes('Employees')) displayCount = stats.employees?.toString() ?? '—';
 
           return (
             <Link

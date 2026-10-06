@@ -36,6 +36,12 @@ export const applicationDetailsApi = {
     });
     return response.data;
   },
+  downloadDocument: async (applicationId: string, documentId: string): Promise<Blob> => {
+    const response = await apiClient.get<Blob>(`/applications/${applicationId}/documents/${documentId}`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
 
 /** React hook for application history */

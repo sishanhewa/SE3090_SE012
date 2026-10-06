@@ -2,17 +2,19 @@
 import httpx
 import structlog
 from typing import Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 logger = structlog.get_logger()
 
 import os
 
-BACKEND_BASE_URL = os.getenv("BACKEND_URL", "http://localhost:5155/api")
+from app.clients.backend_url import backend_api_url
+
+BACKEND_BASE_URL = backend_api_url()
 
 
 async def get_candidate_availability(
-    candidate_profile_id: str,
+    application_id: str,
     date_range_start: str,
     date_range_end: str,
     auth_token: str | None = None,
@@ -23,18 +25,24 @@ async def get_candidate_availability(
     
     Allowed tool for: InterviewAgent
     """
-    logger.info(
-        "tool_get_candidate_availability",
-        candidate_profile_id=candidate_profile_id,
-        note="Backend endpoint pending - returning no conflicts",
-    )
-    return {
-        "candidate_profile_id": candidate_profile_id,
-        "date_range": {"start": date_range_start, "end": date_range_end},
-        "existing_interviews": [],
-        "has_conflicts": False,
-        "note": "Availability check mocked.",
-    }
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(
+            f"{BACKEND_BASE_URL}/interviews/application/{application_id}",
+            headers=_auth_headers(auth_token),
+        )
+        response.raise_for_status()
+        payload = response.json()
+        interviews = payload.get("items", []) if isinstance(payload, dict) else payload
+        active = [item for item in interviews if item.get("status") not in ("Cancelled", "NoShow")]
+        return {
+            "application_id": application_id,
+            "date_range": {"start": date_range_start, "end": date_range_end},
+            "existing_interviews": [{
+                "scheduled_at": item.get("scheduledAt", ""),
+                "duration_minutes": item.get("durationMinutes", 60),
+            } for item in active],
+            "has_conflicts": bool(active),
+        }
 
 
 async def get_interviewer_availability(
@@ -90,24 +98,21 @@ async def get_calendar_availability(
 ) -> dict[str, Any]:
     """
     Check Google Calendar availability for multiple users.
-    Falls back gracefully if Calendar integration is not configured.
+    External availability is checked by the backend when it sends an invitation.
     
     Allowed tool for: InterviewAgent
     """
-    # Google Calendar integration is optional
-    # For now, return mock availability indicating no external conflicts
     logger.info(
         "tool_get_calendar_availability",
         user_count=len(user_ids),
-        note="Calendar integration pending — returning no external conflicts",
+        note="External availability is not verifiable during screening",
     )
     return {
         "user_ids": user_ids,
         "date_range": {"start": date_range_start, "end": date_range_end},
-        "external_conflicts": [],
+        "external_conflicts": None,
         "calendar_connected": False,
-        "note": "Google Calendar integration not yet configured. "
-                "Availability based on internal interview schedule only.",
+        "note": "Calendar availability will be checked before the invitation is sent.",
     }
 
 
@@ -155,20 +160,26 @@ def suggest_interview_slots(
     Locally compute available interview slots avoiding conflicts.
     Business hours only (9 AM - 5 PM), weekdays only.
     """
-    start = datetime.fromisoformat(range_start.replace("Z", "+00:00"))
-    end = datetime.fromisoformat(range_end.replace("Z", "+00:00"))
+    def as_utc(value: str) -> datetime:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed.astimezone(timezone.utc)
+
+    start = as_utc(range_start)
+    end = as_utc(range_end)
 
     # Collect all busy periods
     busy_periods = []
     for interview in existing_candidate_interviews + existing_interviewer_interviews:
         scheduled = interview.get("scheduled_at", "")
         if scheduled:
-            s = datetime.fromisoformat(scheduled.replace("Z", "+00:00"))
+            s = as_utc(scheduled)
             dur = interview.get("duration_minutes", 60)
             busy_periods.append((s, s + timedelta(minutes=dur)))
 
     slots = []
     current = start.replace(hour=9, minute=0, second=0, microsecond=0)
+    if current < start:
+        current += timedelta(days=1)
 
     while current + timedelta(minutes=duration_minutes) <= end and len(slots) < max_slots:
         # Skip weekends

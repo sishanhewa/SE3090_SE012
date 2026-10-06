@@ -43,5 +43,8 @@ export const offersApi = {
   updateStatus: async (id: string, status: string) => {
     const response = await apiClient.patch(`/offers/${id}/status`, { status });
     return response.data;
-  }
+  },
+  resendHiredNotification: async (id: string) => {
+    await apiClient.post(`/offers/${id}/notify-hired`);
+  },
 };

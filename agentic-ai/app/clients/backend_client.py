@@ -10,12 +10,15 @@ load_dotenv()
 
 logger = structlog.get_logger()
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5155/api")
+from app.clients.backend_url import backend_api_url
+
+BACKEND_URL = backend_api_url()
 
 
 async def push_workflow_results(
     workflow_id: str,
     final_state: dict[str, Any],
+    auth_token: str = "",
 ) -> bool:
     """
     Push the completed workflow results back to the .NET backend
@@ -26,6 +29,17 @@ async def push_workflow_results(
     step_order = 1
 
     step_logs = final_state.get("step_logs", [])
+
+    if final_state.get("plan"):
+        agent_steps.append({
+            "agentName": "CoordinatorAgent",
+            "stepOrder": step_order,
+            "status": "Completed",
+            "input": json.dumps({"objective": final_state.get("plan", {}).get("objective")}),
+            "output": json.dumps(final_state["plan"]),
+            "toolCalls": [],
+        })
+        step_order += 1
     
     def extract_tools_for_agent(agent_prefix: str):
         tools = []
@@ -35,7 +49,7 @@ async def push_workflow_results(
             if log.get("success") is not None:
                 # Let's map tools based on their names to agents
                 tool_name = log.get("tool_name", "")
-                is_candidate = tool_name in ["get_job_requirements", "get_candidate_profile", "get_candidate_skills", "get_candidate_experience", "get_candidate_education", "get_application_documents", "analyze_candidate"]
+                is_candidate = tool_name in ["get_application", "get_job_requirements", "get_application_resume", "analyze_candidate"]
                 is_validation = tool_name in ["validate_application_state", "validate_scoring", "validate_schema"]
                 is_interview = tool_name in ["get_candidate_availability", "get_interviewer_availability", "create_interview_draft"]
                 
@@ -120,6 +134,7 @@ async def push_workflow_results(
     payload = {
         "workflowId": workflow_id,
         "status": mapped_status,
+        "plan": json.dumps(final_state["plan"]) if final_state.get("plan") else None,
         "finalResult": final_result_str,
         "errorDetails": final_state.get("error"),
         "agentSteps": agent_steps,
@@ -135,7 +150,8 @@ async def push_workflow_results(
                 status=mapped_status,
                 agent_steps_count=len(agent_steps),
             )
-            response = await client.post(url, json=payload)
+            headers = {"Authorization": f"Bearer {auth_token}"} if auth_token else {}
+            response = await client.post(url, json=payload, headers=headers)
 
             if response.status_code == 200:
                 logger.info(
@@ -175,4 +191,3 @@ def _extract_tool_calls(step_logs: list[dict], agent_name: str) -> list[dict]:
             "durationMs": log_entry.get("duration_ms", 50),
         })
     return tool_calls
-

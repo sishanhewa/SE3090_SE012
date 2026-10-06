@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { ChatWidget } from '../chat/ChatWidget';
 import {
   LayoutDashboard,
   Building2,
@@ -140,6 +141,11 @@ export default function DashboardLayout() {
       <main className="flex-1 overflow-auto bg-background/50">
         <Outlet />
       </main>
+
+      {/* AI Recruitment Chat Widget for authorized roles */}
+      {(userRoles.includes('SystemAdmin') || userRoles.includes('Recruiter') || userRoles.includes('HiringManager')) && (
+        <ChatWidget />
+      )}
     </div>
   );
 }

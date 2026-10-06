@@ -85,10 +85,21 @@ public class EmployeeService : IEmployeeService
         if (request.DepartmentId.HasValue) employee.DepartmentId = request.DepartmentId.Value;
         if (request.Position != null) employee.Position = request.Position;
         
-        if (request.Status != null && Enum.TryParse<EmployeeStatus>(request.Status, true, out var newStatus))
+        if (request.Status != null)
         {
+            if (!Enum.TryParse<EmployeeStatus>(request.Status, true, out var newStatus) ||
+                !Enum.IsDefined(newStatus))
+                return Result<EmployeeResponse>.Failure("Invalid employee status.");
             if (employee.Status != newStatus)
             {
+                if (employee.Status != EmployeeStatus.Onboarding || newStatus != EmployeeStatus.Active)
+                    return Result<EmployeeResponse>.Failure("Employee status change is not allowed from this stage.");
+                if (await _context.EmployeeOnboardingTasks.Include(t => t.OnboardingTask)
+                    .AnyAsync(t => t.EmployeeId == employee.Id && t.OnboardingTask.IsMandatory && !t.IsCompleted,
+                        cancellationToken))
+                    return Result<EmployeeResponse>.Failure("Complete all required onboarding tasks first.");
+                if (!await _context.EmployeeOnboardingTasks.AnyAsync(t => t.EmployeeId == employee.Id, cancellationToken))
+                    return Result<EmployeeResponse>.Failure("Assign an onboarding template before completion.");
                 employee.StatusHistory.Add(new EmployeeStatusHistory
                 {
                     FromStatus = employee.Status,
@@ -151,6 +162,9 @@ public class EmployeeService : IEmployeeService
 
         if (existingEmployee)
             return Result<EmployeeResponse>.Conflict("An employee has already been created from this application.");
+        if (await _context.Employees.AnyAsync(e => e.UserId == application.CandidateProfile.UserId,
+            cancellationToken))
+            return Result<EmployeeResponse>.Conflict("This candidate already has an employee record.");
 
         // Generate unique employee number
         var employeeNumber = await GenerateEmployeeNumberAsync(application.Job.CompanyId, cancellationToken);

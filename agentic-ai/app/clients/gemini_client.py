@@ -17,15 +17,8 @@ class GeminiClient:
     Supports automatic key fallback when the primary key is rate-limited.
     """
 
-    def __init__(self, model_name: str = "gemini-2.0-flash"):
-        self._api_keys = []
-        primary = os.getenv("GOOGLE_API_KEY", "")
-        fallback = os.getenv("GOOGLE_API_KEY_FALLBACK", "")
-
-        if primary:
-            self._api_keys.append(primary)
-        if fallback:
-            self._api_keys.append(fallback)
+    def __init__(self, model_name: str = "gemini-3.8-flash"):
+        self._api_keys = [v for k, v in os.environ.items() if k.startswith("GOOGLE_API_KEY") and v]
 
         if not self._api_keys:
             logger.warning("No GOOGLE_API_KEY set — Gemini calls will fail")
@@ -59,9 +52,9 @@ class GeminiClient:
         logger.error("gemini_all_keys_exhausted")
         return False
 
-    async def _invoke_with_fallback(self, messages: list, structured_llm=None):
+    async def _invoke_with_fallback(self, messages: list, output_schema: Optional[type[BaseModel]] = None):
         """Invoke LLM with automatic key rotation on rate-limit errors."""
-        llm = structured_llm or self.llm
+        llm = self.llm.with_structured_output(output_schema) if output_schema else self.llm
         try:
             return await llm.ainvoke(messages)
         except Exception as e:
@@ -72,12 +65,7 @@ class GeminiClient:
             )
             if is_retryable and self._rotate_key():
                 logger.warning("gemini_retrying_with_fallback_key", error=str(e))
-                new_llm = self.llm
-                if structured_llm is not None:
-                    # Rebuild structured output wrapper with the new LLM
-                    new_llm = self.llm.with_structured_output(
-                        structured_llm.first.schema  # type: ignore
-                    ) if hasattr(structured_llm, "first") else self.llm
+                new_llm = self.llm.with_structured_output(output_schema) if output_schema else self.llm
                 return await new_llm.ainvoke(messages)
             raise
 
@@ -93,12 +81,22 @@ class GeminiClient:
         messages.append(("human", prompt))
 
         response = await self._invoke_with_fallback(messages)
+        content = response.content
+        if isinstance(content, list):
+            text_content = ""
+            for part in content:
+                if isinstance(part, dict) and part.get("type") == "text":
+                    text_content += part.get("text", "")
+                elif isinstance(part, str):
+                    text_content += part
+            content = text_content
+
         logger.info(
             "gemini_text_generated",
             prompt_length=len(prompt),
-            response_length=len(response.content),
+            response_length=len(content),
         )
-        return response.content
+        return content
 
     async def generate_structured(
         self,
@@ -107,14 +105,12 @@ class GeminiClient:
         system_instruction: Optional[str] = None,
     ) -> BaseModel:
         """Generate structured output conforming to a Pydantic schema."""
-        structured_llm = self.llm.with_structured_output(output_schema)
-
         messages = []
         if system_instruction:
             messages.append(("system", system_instruction))
         messages.append(("human", prompt))
 
-        result = await self._invoke_with_fallback(messages, structured_llm)
+        result = await self._invoke_with_fallback(messages, output_schema)
         logger.info(
             "gemini_structured_generated",
             schema=output_schema.__name__,

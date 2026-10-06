@@ -114,6 +114,10 @@ public class OnboardingService : IOnboardingService
 
         if (employee == null)
             return Result<List<EmployeeOnboardingTaskResponse>>.NotFound("Employee not found.");
+        if (employee.CompanyId != template.CompanyId)
+            return Result<List<EmployeeOnboardingTaskResponse>>.Forbidden();
+        if (await _context.EmployeeOnboardingTasks.AnyAsync(t => t.EmployeeId == employeeId, cancellationToken))
+            return Result<List<EmployeeOnboardingTaskResponse>>.Conflict("Onboarding tasks are already assigned.");
 
         var employeeTasks = template.Tasks.Select(t => new EmployeeOnboardingTask
         {

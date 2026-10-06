@@ -60,12 +60,14 @@ export const onboardingApi = {
   },
 
   completeTask: async (
-    employeeId: string,
     taskId: string,
     notes?: string
   ): Promise<void> => {
-    await apiClient.post(`/employees/${employeeId}/onboarding/${taskId}/complete`, {
+    await apiClient.patch(`/onboarding/tasks/${taskId}`, {
       notes,
     });
+  },
+  assignTemplate: async (employeeId: string, templateId: string): Promise<void> => {
+    await apiClient.post(`/employees/${employeeId}/onboarding/assign/${templateId}`);
   },
 };

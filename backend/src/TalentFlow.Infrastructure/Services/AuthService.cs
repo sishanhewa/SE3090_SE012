@@ -3,12 +3,14 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using TalentFlow.Application.Common;
 using TalentFlow.Application.DTOs.Auth;
 using TalentFlow.Application.Interfaces.Services;
 using TalentFlow.Domain.Entities;
+using TalentFlow.Infrastructure.Persistence;
 
 namespace TalentFlow.Infrastructure.Services;
 
@@ -20,15 +22,18 @@ public class AuthService : IAuthService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
     private readonly JwtSettings _jwtSettings;
+    private readonly AppDbContext _context;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole<Guid>> roleManager,
-        IOptions<JwtSettings> jwtSettings)
+        IOptions<JwtSettings> jwtSettings,
+        AppDbContext context)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _jwtSettings = jwtSettings.Value;
+        _context = context;
     }
 
     public async Task<Result<AuthResponse>> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)
@@ -40,11 +45,10 @@ public class AuthService : IAuthService
             return Result<AuthResponse>.Conflict("A user with this email already exists.", "USER_EXISTS");
         }
 
-        // Validate role
-        var validRoles = new[] { "Candidate", "Recruiter", "HiringManager", "Employee", "SystemAdmin" };
-        if (!validRoles.Contains(request.Role))
+        // Public registration must never grant staff or administrator privileges.
+        if (!string.Equals(request.Role, "Candidate", StringComparison.Ordinal))
         {
-            return Result<AuthResponse>.Failure($"Invalid role: {request.Role}. Valid roles are: {string.Join(", ", validRoles)}");
+            return Result<AuthResponse>.Failure("Public registration is available for candidates only.");
         }
 
         // Ensure role exists
@@ -155,6 +159,9 @@ public class AuthService : IAuthService
         }
 
         var roles = await _userManager.GetRolesAsync(user);
+        var companyId = await _context.CompanyMemberships.Where(m => m.UserId == user.Id)
+            .OrderBy(m => m.CreatedAt).Select(m => (Guid?)m.CompanyId)
+            .FirstOrDefaultAsync(cancellationToken);
 
         var userInfo = new UserInfoResponse
         {
@@ -162,7 +169,8 @@ public class AuthService : IAuthService
             Email = user.Email!,
             FirstName = user.FirstName,
             LastName = user.LastName,
-            Roles = roles
+            Roles = roles,
+            CompanyId = companyId
         };
 
         return Result<UserInfoResponse>.Success(userInfo);
@@ -172,8 +180,13 @@ public class AuthService : IAuthService
     {
         var roles = await _userManager.GetRolesAsync(user);
 
-        var accessToken = GenerateJwtToken(user, roles, _jwtSettings.AccessTokenExpiryMinutes);
-        var refreshToken = GenerateJwtToken(user, roles, _jwtSettings.RefreshTokenExpiryDays * 24 * 60);
+        var companyId = await _context.CompanyMemberships
+            .Where(m => m.UserId == user.Id)
+            .OrderBy(m => m.CreatedAt)
+            .Select(m => (Guid?)m.CompanyId)
+            .FirstOrDefaultAsync();
+        var accessToken = GenerateJwtToken(user, roles, _jwtSettings.AccessTokenExpiryMinutes, companyId);
+        var refreshToken = GenerateJwtToken(user, roles, _jwtSettings.RefreshTokenExpiryDays * 24 * 60, companyId);
 
         return new AuthResponse
         {
@@ -186,12 +199,13 @@ public class AuthService : IAuthService
                 Email = user.Email!,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                Roles = roles
+                Roles = roles,
+                CompanyId = companyId
             }
         };
     }
 
-    private string GenerateJwtToken(ApplicationUser user, IList<string> roles, int expiryMinutes)
+    private string GenerateJwtToken(ApplicationUser user, IList<string> roles, int expiryMinutes, Guid? companyId)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -210,6 +224,8 @@ public class AuthService : IAuthService
         {
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
+        if (companyId.HasValue)
+            claims.Add(new Claim("CompanyId", companyId.Value.ToString()));
 
         var token = new JwtSecurityToken(
             issuer: _jwtSettings.Issuer,
