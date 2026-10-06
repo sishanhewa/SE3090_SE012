@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using TalentFlow.Domain.Entities;
 
 namespace TalentFlow.Infrastructure.Persistence;
@@ -16,6 +17,15 @@ public static class DataSeeder
 
         try
         {
+            var dbContext = serviceProvider.GetRequiredService<AppDbContext>();
+            // Apply pending migrations automatically
+            var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
+            if (pendingMigrations.Any())
+            {
+                logger.LogInformation("Applying pending database migrations...");
+                await dbContext.Database.MigrateAsync();
+            }
+
             await SeedRolesAsync(serviceProvider, logger);
             await SeedAdminUserAsync(serviceProvider, logger);
             await SeedSampleDataAsync(serviceProvider, logger);
@@ -115,7 +125,14 @@ public static class DataSeeder
                 MinimumExperience = 5,
                 VacancyCount = 2,
                 ApplicationDeadline = DateTime.UtcNow.AddDays(30),
-                Status = TalentFlow.Domain.Enums.JobStatus.Published
+                Status = TalentFlow.Domain.Enums.JobStatus.Published,
+                Requirements = new List<JobRequirement>
+                {
+                    new JobRequirement { Description = "Skill: c#", IsMandatory = true, Weight = 20 },
+                    new JobRequirement { Description = "Skill: .net core", IsMandatory = true, Weight = 20 },
+                    new JobRequirement { Description = "Minimum Education: Bachelor's Degree", IsMandatory = true, Weight = 10 },
+                    new JobRequirement { Description = "Willing to work PST hours", IsMandatory = false, Weight = 5 }
+                }
             };
             var job2 = new Job
             {
@@ -173,16 +190,60 @@ public static class DataSeeder
                 await userManager.CreateAsync(candidate, "Candidate@123");
                 await userManager.AddToRoleAsync(candidate, "Candidate");
                 
-                // Add Candidate Profile
-                dbContext.CandidateProfiles.Add(new CandidateProfile
+                // Add Candidate Profile with explicit Skills and Experience
+                var profile = new CandidateProfile
                 {
                     UserId = candidate.Id,
                     Summary = "Experienced software engineer looking for new challenges.",
                     Phone = "+1 555-0100"
+                };
+                dbContext.CandidateProfiles.Add(profile);
+                await dbContext.SaveChangesAsync();
+
+                var csharpSkill = new Skill { Name = "c#" };
+                var netCoreSkill = new Skill { Name = ".net core" };
+                dbContext.Skills.AddRange(csharpSkill, netCoreSkill);
+                await dbContext.SaveChangesAsync();
+
+                dbContext.CandidateSkills.AddRange(
+                    new CandidateSkill { CandidateProfileId = profile.Id, SkillId = csharpSkill.Id, YearsOfExperience = 5, ProficiencyLevel = "Expert" },
+                    new CandidateSkill { CandidateProfileId = profile.Id, SkillId = netCoreSkill.Id, YearsOfExperience = 4, ProficiencyLevel = "Advanced" }
+                );
+
+                dbContext.CandidateExperience.Add(new CandidateExperience
+                {
+                    CandidateProfileId = profile.Id,
+                    JobTitle = "Backend Engineer",
+                    CompanyName = "Tech Corp",
+                    StartDate = DateTime.UtcNow.AddYears(-5),
+                    IsCurrent = true,
+                    Description = "Built microservices using C# and .NET Core."
+                });
+
+                dbContext.CandidateEducation.Add(new CandidateEducation
+                {
+                    CandidateProfileId = profile.Id,
+                    Institution = "State University",
+                    Degree = "Bachelor's Degree",
+                    FieldOfStudy = "Computer Science",
+                    StartDate = DateTime.UtcNow.AddYears(-9),
+                    EndDate = DateTime.UtcNow.AddYears(-5)
                 });
                 await dbContext.SaveChangesAsync();
+
+                // Seed Application
+                var application = new TalentFlow.Domain.Entities.Application
+                {
+                    JobId = job1.Id,
+                    CandidateProfileId = profile.Id,
+                    Status = TalentFlow.Domain.Enums.ApplicationStatus.Screening,
+                    CoverLetter = "I am a senior backend engineer with 5 years of C# experience.",
+                    SubmittedAt = DateTime.UtcNow
+                };
+                dbContext.Applications.Add(application);
+                await dbContext.SaveChangesAsync();
             }
-            logger.LogInformation("Seeded sample recruiter and candidate users.");
+            logger.LogInformation("Seeded sample recruiter, candidate, and application.");
         }
     }
 }

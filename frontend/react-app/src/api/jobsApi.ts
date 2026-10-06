@@ -13,19 +13,33 @@ export interface JobResponse {
   status: string;
   salaryMin?: number;
   salaryMax?: number;
+  departmentId: string;
+  departmentName: string;
+  minimumExperience: number;
+  vacancyCount: number;
+  applicationDeadline: string;
+  requirements?: CreateJobRequirementRequest[];
   postedDate?: string;
 }
 
+export interface CreateJobRequirementRequest {
+  description: string;
+  isMandatory: boolean;
+  weight: number;
+}
+
 export interface CreateJobRequest {
-  companyId: string;
   title: string;
   description: string;
-  department: string;
-  location: string;
   employmentType: string;
-  experienceLevel: string;
+  location: string;
+  minimumExperience: number;
+  vacancyCount: number;
+  applicationDeadline: string; // ISO 8601
   salaryMin?: number;
   salaryMax?: number;
+  departmentId: string;
+  requirements: CreateJobRequirementRequest[];
 }
 
 export const jobsApi = {

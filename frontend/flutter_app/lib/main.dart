@@ -6,11 +6,37 @@ import 'core/auth/auth_provider.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'core/navigation/main_navigation_screen.dart';
 
+final authProvider = AuthProvider();
+
+final router = GoRouter(
+  initialLocation: '/login',
+  refreshListenable: authProvider,
+  redirect: (context, state) {
+    final isLoggedIn = authProvider.isAuthenticated;
+    final location = state.uri.toString();
+
+    if (!isLoggedIn && location != '/login') return '/login';
+    if (isLoggedIn && (location == '/login' || location == '/')) return '/home';
+
+    return null;
+  },
+  routes: [
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/home',
+      builder: (context, state) => const MainNavigationScreen(),
+    ),
+  ],
+);
+
 void main() {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider.value(value: authProvider),
       ],
       child: const TalentFlowApp(),
     ),
@@ -22,33 +48,8 @@ class TalentFlowApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    final GoRouter router = GoRouter(
-      initialLocation: '/login',
-      refreshListenable: authProvider,
-      redirect: (context, state) {
-        final isLoggedIn = authProvider.isAuthenticated;
-        final isLoggingIn = state.uri.toString() == '/login';
-
-        if (!isLoggedIn && !isLoggingIn) return '/login';
-        if (isLoggedIn && isLoggingIn) return '/home';
-
-        return null;
-      },
-      routes: [
-        GoRoute(
-          path: '/login',
-          builder: (context, state) => const LoginScreen(),
-        ),
-        GoRoute(
-          path: '/home',
-          builder: (context, state) => const MainNavigationScreen(),
-        ),
-      ],
-    );
-
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       title: 'TalentFlow Candidate',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),

@@ -5,8 +5,6 @@ from typing import Any, Optional
 from app.tools.validation_tools import (
     validate_application_state,
     validate_scoring,
-    validate_scheduling,
-    validate_authorization,
     validate_schema,
 )
 from app.schemas.agent_schemas import (
@@ -74,6 +72,16 @@ class ValidationAgent:
                 "candidate_analysis",
             )
             self._collect_results(schema_result, all_errors, all_warnings, all_checks)
+
+            missing_skills = [match.skill_name for match in input_data.candidate_analysis.mandatory_skill_matches
+                              if not match.is_matched]
+            all_checks.append("mandatory_cv_requirements")
+            if missing_skills:
+                all_errors.append("CV does not evidence mandatory requirements: " + ", ".join(missing_skills))
+
+            all_checks.append("minimum_cv_experience")
+            if not input_data.candidate_analysis.meets_experience_requirement:
+                all_errors.append("CV does not evidence the minimum years of experience")
 
         # 2. Validate scoring results
         if input_data.score_result:

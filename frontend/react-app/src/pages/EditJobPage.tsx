@@ -16,10 +16,12 @@ export default function EditJobPage() {
   const [formData, setFormData] = useState<Partial<CreateJobRequest>>({
     title: '',
     description: '',
-    department: '',
+    departmentId: '',
     location: '',
     employmentType: '',
-    experienceLevel: '',
+    minimumExperience: 0,
+    vacancyCount: 1,
+    applicationDeadline: '',
     salaryMin: undefined,
     salaryMax: undefined,
   });
@@ -33,10 +35,12 @@ export default function EditJobPage() {
         setFormData({
           title: jobData.title,
           description: jobData.description,
-          department: jobData.department,
+          departmentId: jobData.departmentId,
           location: jobData.location,
           employmentType: jobData.employmentType,
-          experienceLevel: jobData.experienceLevel,
+          minimumExperience: jobData.minimumExperience,
+          vacancyCount: jobData.vacancyCount,
+          applicationDeadline: jobData.applicationDeadline ? jobData.applicationDeadline.split('T')[0] : '',
           salaryMin: jobData.salaryMin,
           salaryMax: jobData.salaryMax,
         });
@@ -107,12 +111,13 @@ export default function EditJobPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Department</label>
+              <label className="text-sm font-medium mb-1 block">Department ID</label>
               <Input
-                placeholder="Department"
-                value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                placeholder="Department ID"
+                value={formData.departmentId}
+                onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
                 required
+                disabled
               />
             </div>
             <div>
@@ -134,11 +139,31 @@ export default function EditJobPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Experience Level</label>
+              <label className="text-sm font-medium mb-1 block">Minimum Experience</label>
               <Input
-                placeholder="Experience Level"
-                value={formData.experienceLevel}
-                onChange={(e) => setFormData({ ...formData, experienceLevel: e.target.value })}
+                placeholder="Minimum Experience"
+                type="number"
+                value={formData.minimumExperience}
+                onChange={(e) => setFormData({ ...formData, minimumExperience: Number(e.target.value) })}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Vacancy Count</label>
+              <Input
+                placeholder="Vacancy Count"
+                type="number"
+                value={formData.vacancyCount}
+                onChange={(e) => setFormData({ ...formData, vacancyCount: Number(e.target.value) })}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Application Deadline</label>
+              <Input
+                type="date"
+                value={formData.applicationDeadline}
+                onChange={(e) => setFormData({ ...formData, applicationDeadline: e.target.value })}
                 required
               />
             </div>

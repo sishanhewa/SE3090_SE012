@@ -19,7 +19,7 @@ public class RegisterRequest
     public string LastName { get; set; } = string.Empty;
 
     /// <summary>
-    /// Role to assign: Candidate, Recruiter, HiringManager, Employee, SystemAdmin
+    /// Public registration accepts Candidate only. Staff accounts are provisioned separately.
     /// </summary>
     [Required]
     public string Role { get; set; } = "Candidate";

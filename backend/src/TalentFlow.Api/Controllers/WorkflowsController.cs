@@ -4,20 +4,24 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TalentFlow.Application.Interfaces.Services;
+using TalentFlow.Infrastructure.Persistence;
 
 namespace TalentFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "SystemAdmin,CompanyAdmin,Recruiter,HiringManager")]
 public class WorkflowsController : ControllerBase
 {
     private readonly IWorkflowService _workflowService;
+    private readonly AppDbContext _context;
 
-    public WorkflowsController(IWorkflowService workflowService)
+    public WorkflowsController(IWorkflowService workflowService, AppDbContext context)
     {
         _workflowService = workflowService;
+        _context = context;
     }
 
     /// <summary>
@@ -30,7 +34,7 @@ public class WorkflowsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var userId = GetUserId();
-        var companyId = GetCompanyId();
+        var companyId = await GetCompanyIdAsync(cancellationToken);
 
         var serviceRequest = new StartScreeningRequest
         {
@@ -39,12 +43,14 @@ public class WorkflowsController : ControllerBase
         };
 
         var result = await _workflowService.StartScreeningWorkflowAsync(
-            serviceRequest, userId, companyId, cancellationToken);
+            serviceRequest, userId, companyId, cancellationToken,
+            Request.Headers.Authorization.ToString().Replace("Bearer ", "", StringComparison.OrdinalIgnoreCase));
 
         if (!result.IsSuccess)
         {
-            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
-            if (result.ErrorCode == "Forbidden") return Forbid();
+            if (result.ErrorCode == "NOT_FOUND") return NotFound(result.Error);
+            if (result.ErrorCode == "FORBIDDEN") return Forbid();
+            if (result.ErrorCode == "CONFLICT") return Conflict(result.Error);
             return BadRequest(result.Error);
         }
         return Ok(result.Data);
@@ -56,11 +62,12 @@ public class WorkflowsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetWorkflow(Guid id, CancellationToken cancellationToken)
     {
+        if (!await CanAccessWorkflowAsync(id, cancellationToken)) return Forbid();
         var result = await _workflowService.GetWorkflowAsync(id, cancellationToken);
         if (!result.IsSuccess)
         {
-            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
-            if (result.ErrorCode == "Forbidden") return Forbid();
+            if (result.ErrorCode == "NOT_FOUND") return NotFound(result.Error);
+            if (result.ErrorCode == "FORBIDDEN") return Forbid();
             return BadRequest(result.Error);
         }
         return Ok(result.Data);
@@ -72,12 +79,13 @@ public class WorkflowsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetWorkflows(CancellationToken cancellationToken)
     {
-        var companyId = GetCompanyId();
+        var companyId = await GetCompanyIdAsync(cancellationToken);
+        if (companyId == Guid.Empty && !User.IsInRole("SystemAdmin")) return Forbid();
         var result = await _workflowService.GetWorkflowsByCompanyAsync(companyId, cancellationToken);
         if (!result.IsSuccess)
         {
-            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
-            if (result.ErrorCode == "Forbidden") return Forbid();
+            if (result.ErrorCode == "NOT_FOUND") return NotFound(result.Error);
+            if (result.ErrorCode == "FORBIDDEN") return Forbid();
             return BadRequest(result.Error);
         }
         return Ok(result.Data);
@@ -87,19 +95,20 @@ public class WorkflowsController : ControllerBase
     /// Approve a workflow that is awaiting approval.
     /// </summary>
     [HttpPost("{id}/approve")]
-    [Authorize(Roles = "SystemAdmin,HiringManager")]
+    [Authorize(Roles = "SystemAdmin,HiringManager,Recruiter")]
     public async Task<IActionResult> ApproveWorkflow(
         Guid id,
         [FromBody] WorkflowDecisionRequest request,
         CancellationToken cancellationToken)
     {
+        if (!await CanAccessWorkflowAsync(id, cancellationToken)) return Forbid();
         var userId = GetUserId();
         var result = await _workflowService.ApproveWorkflowAsync(
             id, userId, request.Comments, cancellationToken);
         if (!result.IsSuccess)
         {
-            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
-            if (result.ErrorCode == "Forbidden") return Forbid();
+            if (result.ErrorCode == "NOT_FOUND") return NotFound(result.Error);
+            if (result.ErrorCode == "FORBIDDEN") return Forbid();
             return BadRequest(result.Error);
         }
         return Ok(result.Data);
@@ -109,19 +118,20 @@ public class WorkflowsController : ControllerBase
     /// Reject a workflow that is awaiting approval.
     /// </summary>
     [HttpPost("{id}/reject")]
-    [Authorize(Roles = "SystemAdmin,HiringManager")]
+    [Authorize(Roles = "SystemAdmin,HiringManager,Recruiter")]
     public async Task<IActionResult> RejectWorkflow(
         Guid id,
         [FromBody] WorkflowDecisionRequest request,
         CancellationToken cancellationToken)
     {
+        if (!await CanAccessWorkflowAsync(id, cancellationToken)) return Forbid();
         var userId = GetUserId();
         var result = await _workflowService.RejectWorkflowAsync(
             id, userId, request.Comments, cancellationToken);
         if (!result.IsSuccess)
         {
-            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
-            if (result.ErrorCode == "Forbidden") return Forbid();
+            if (result.ErrorCode == "NOT_FOUND") return NotFound(result.Error);
+            if (result.ErrorCode == "FORBIDDEN") return Forbid();
             return BadRequest(result.Error);
         }
         return Ok(result.Data);
@@ -131,22 +141,45 @@ public class WorkflowsController : ControllerBase
     /// Request revision of a workflow that is awaiting approval.
     /// </summary>
     [HttpPost("{id}/revise")]
-    [Authorize(Roles = "SystemAdmin,HiringManager")]
+    [Authorize(Roles = "SystemAdmin,HiringManager,Recruiter")]
     public async Task<IActionResult> RequestRevision(
         Guid id,
         [FromBody] WorkflowDecisionRequest request,
         CancellationToken cancellationToken)
     {
+        if (!await CanAccessWorkflowAsync(id, cancellationToken)) return Forbid();
         var userId = GetUserId();
         if (string.IsNullOrWhiteSpace(request.Comments))
             return BadRequest("Comments are required when requesting a revision.");
 
         var result = await _workflowService.RequestRevisionAsync(
-            id, userId, request.Comments, cancellationToken);
+            id, userId, request.Comments, cancellationToken,
+            Request.Headers.Authorization.ToString().Replace("Bearer ", "", StringComparison.OrdinalIgnoreCase));
         if (!result.IsSuccess)
         {
-            if (result.ErrorCode == "NotFound") return NotFound(result.Error);
-            if (result.ErrorCode == "Forbidden") return Forbid();
+            if (result.ErrorCode == "NOT_FOUND") return NotFound(result.Error);
+            if (result.ErrorCode == "FORBIDDEN") return Forbid();
+            return BadRequest(result.Error);
+        }
+        return Ok(result.Data);
+    }
+
+    /// <summary>
+    /// Internal callback for the AI service to push results back.
+    /// </summary>
+    [HttpPost("callback")]
+    [Authorize(Roles = "SystemAdmin,Recruiter,HiringManager")]
+    public async Task<IActionResult> AiCallback(
+        [FromBody] AiWorkflowCallbackRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!await CanAccessWorkflowAsync(request.WorkflowId, cancellationToken)) return Forbid();
+        var result = await _workflowService.UpdateWorkflowFromAiAsync(
+            request, cancellationToken);
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorCode == "NOT_FOUND") return NotFound(result.Error);
+            if (result.ErrorCode == "CONFLICT") return Conflict(result.Error);
             return BadRequest(result.Error);
         }
         return Ok(result.Data);
@@ -158,10 +191,23 @@ public class WorkflowsController : ControllerBase
         return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
     }
 
-    private Guid GetCompanyId()
+    private async Task<bool> CanAccessWorkflowAsync(Guid workflowId, CancellationToken cancellationToken)
+    {
+        var result = await _workflowService.GetWorkflowAsync(workflowId, cancellationToken);
+        if (!result.IsSuccess) return false;
+        if (User.IsInRole("SystemAdmin")) return true;
+        var companyId = await GetCompanyIdAsync(cancellationToken);
+        return companyId != Guid.Empty && result.Data!.CompanyId == companyId;
+    }
+
+    private async Task<Guid> GetCompanyIdAsync(CancellationToken cancellationToken)
     {
         var claim = User.FindFirst("CompanyId")?.Value;
-        return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
+        if (Guid.TryParse(claim, out var id)) return id;
+        var userId = GetUserId();
+        if (userId == Guid.Empty) return Guid.Empty;
+        return await _context.CompanyMemberships.Where(m => m.UserId == userId)
+            .OrderBy(m => m.CreatedAt).Select(m => m.CompanyId).FirstOrDefaultAsync(cancellationToken);
     }
 }
 

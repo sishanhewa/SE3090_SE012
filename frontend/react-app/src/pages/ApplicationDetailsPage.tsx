@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, XCircle } from 'lucide-react';
+import ApplicationTimeline from '../components/applications/ApplicationTimeline';
+import DocumentViewer from '../components/applications/DocumentViewer';
 
 export default function ApplicationDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +20,7 @@ export default function ApplicationDetailsPage() {
 
   const [application, setApplication] = useState<ApplicationResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [startingScreening, setStartingScreening] = useState(false);
 
   const fetchApplication = async () => {
     if (!id) return;
@@ -37,8 +40,10 @@ export default function ApplicationDetailsPage() {
 
   const handleUpdateStatus = async (newStatus: string) => {
     if (!id) return;
+    const notes = newStatus === 'Rejected' ? window.prompt('Why are you rejecting this candidate?') : `Status updated to ${newStatus}`;
+    if (notes === null || !notes.trim()) return;
     try {
-      await applicationsApi.updateStatus(id, newStatus, `Status updated to ${newStatus}`);
+      await applicationsApi.updateStatus(id, newStatus, notes);
       fetchApplication();
     } catch (error) {
       console.error('Failed to update status', error);
@@ -58,14 +63,17 @@ export default function ApplicationDetailsPage() {
   };
 
   const handleRunAiScreening = async () => {
-    if (!application) return;
+    if (!application || startingScreening) return;
+    setStartingScreening(true);
     try {
-      await workflowsApi.startScreening(application.id, application.jobId);
-      alert('AI Screening workflow started successfully!');
+      const workflow = await workflowsApi.startScreening(application.id, application.jobId);
       fetchApplication();
+      navigate(`/workflows/${workflow.id}`);
     } catch (error) {
       console.error('Failed to start AI screening', error);
-      alert('Failed to start AI screening. It might already be running or the application is in an invalid state.');
+      alert('Unable to start screening. Check that a CV is attached and no review is already pending.');
+    } finally {
+      setStartingScreening(false);
     }
   };
 
@@ -114,13 +122,13 @@ export default function ApplicationDetailsPage() {
                 <div className="font-medium">{application.candidateName}</div>
               </div>
             )}
-            {application.aiScore && (
+            {isStaff && application.aiScore && (
               <div>
                 <label className="text-sm text-muted-foreground">AI Match Score</label>
                 <div className="font-medium">{application.aiScore}%</div>
               </div>
             )}
-            {application.aiRecommendation && (
+            {isStaff && application.aiRecommendation && (
               <div>
                 <label className="text-sm text-muted-foreground">AI Recommendation</label>
                 <div className="font-medium">{application.aiRecommendation}</div>
@@ -143,26 +151,34 @@ export default function ApplicationDetailsPage() {
         </Card>
       </div>
 
+      {/* Timeline & Documents Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ApplicationTimeline applicationId={id!} />
+        <DocumentViewer applicationId={id!} canUpload={!isStaff && ['Submitted', 'Screening'].includes(application.status)} />
+      </div>
+
       <div className="flex gap-4 pt-4 border-t">
         {isStaff && application.status !== 'Hired' && application.status !== 'Rejected' && application.status !== 'Withdrawn' && (
           <>
             {application.status === 'Submitted' && (
               <>
                 <Button onClick={() => handleUpdateStatus('Screening')}>Move to Screening (Manual)</Button>
-                <Button variant="default" className="bg-purple-600 hover:bg-purple-700" onClick={handleRunAiScreening}>Run AI Screening</Button>
+                <Button variant="default" className="bg-purple-600 hover:bg-purple-700" onClick={handleRunAiScreening} disabled={!application.resumeDocumentId || startingScreening}>{startingScreening ? 'Starting…' : 'Run AI Screening'}</Button>
               </>
             )}
             {application.status === 'Screening' && (
-              <>
-                <Button onClick={() => handleUpdateStatus('Shortlisted')}>Shortlist</Button>
-                <Button variant="default" className="bg-purple-600 hover:bg-purple-700" onClick={handleRunAiScreening}>Run AI Screening</Button>
-              </>
+              <Button variant="default" className="bg-purple-600 hover:bg-purple-700" onClick={handleRunAiScreening} disabled={!application.resumeDocumentId || startingScreening}>{startingScreening ? 'Starting…' : 'Run AI Screening'}</Button>
             )}
-            {application.status === 'Shortlisted' && <Button onClick={() => handleUpdateStatus('Interview')}>Invite to Interview</Button>}
-            {application.status === 'Interview' && <Button onClick={() => handleUpdateStatus('Offered')}>Extend Offer</Button>}
-            {application.status === 'Offered' && <Button onClick={() => handleUpdateStatus('Hired')}>Mark as Hired</Button>}
-            <Button variant="destructive" onClick={() => handleUpdateStatus('Rejected')}>Reject</Button>
+            {application.status === 'Screening' && <p className="text-sm text-muted-foreground">Review the screening workflow to shortlist or reject this candidate.</p>}
+            {application.status === 'Shortlisted' && <Button onClick={() => navigate('/interviews')}>View interview allocation</Button>}
+            {application.status === 'Interview' && <Button onClick={() => navigate('/offers')}>Review interview and draft offer</Button>}
+            {application.status === 'Offered' && <Button onClick={() => navigate('/offers')}>View offer</Button>}
+            {['Shortlisted', 'Interview'].includes(application.status) && <Button variant="destructive" onClick={() => handleUpdateStatus('Rejected')}>Reject</Button>}
           </>
+        )}
+
+        {isStaff && !application.resumeDocumentId && (application.status === 'Submitted' || application.status === 'Screening') && (
+          <p className="text-sm text-amber-700">AI screening needs the candidate's uploaded CV.</p>
         )}
         
         {!isStaff && application.status !== 'Withdrawn' && application.status !== 'Rejected' && application.status !== 'Hired' && (

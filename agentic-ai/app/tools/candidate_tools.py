@@ -1,13 +1,82 @@
 """Candidate Analysis Agent tools — read-only data retrieval from backend API."""
 import httpx
 import structlog
+from io import BytesIO
+from pathlib import Path
+import re
+import os
+from pypdf import PdfReader
+from docx import Document
 from typing import Any, Optional
 
 logger = structlog.get_logger()
 
 # Base URL for the ASP.NET backend API
-BACKEND_BASE_URL = "http://localhost:5000/api"
+from app.clients.backend_url import backend_api_url
 
+BACKEND_BASE_URL = backend_api_url()
+
+
+async def get_application(
+    application_id: str, auth_token: Optional[str] = None
+) -> dict[str, Any]:
+    """Fetch application details including the candidate_profile_id."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        headers = _auth_headers(auth_token)
+        response = await client.get(
+            f"{BACKEND_BASE_URL}/applications/{application_id}", headers=headers
+        )
+        response.raise_for_status()
+        app_data = response.json()
+        
+        logger.info("tool_get_application", application_id=application_id, status="success")
+        return {
+            "application_id": application_id,
+            "job_id": app_data.get("jobId", ""),
+            "candidate_profile_id": app_data.get("candidateProfileId", ""),
+            "status": app_data.get("status", 0),
+            "cover_letter": app_data.get("coverLetter", ""),
+            "candidate_name": app_data.get("candidateName", ""),
+            "resume_document_id": app_data.get("resumeDocumentId"),
+        }
+
+
+async def get_application_resume(
+    application_id: str, auth_token: Optional[str] = None
+) -> dict[str, str]:
+    """Read only the CV attached to this application, through the protected API."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(
+            f"{BACKEND_BASE_URL}/applications/{application_id}/resume",
+            headers=_auth_headers(auth_token),
+        )
+        response.raise_for_status()
+        content = response.content
+        if not content or len(content) > 10_000_000:
+            raise ValueError("The attached CV is empty or exceeds 10 MB")
+
+        disposition = response.headers.get("content-disposition", "")
+        match = re.search(r'filename="?([^";]+)', disposition, re.IGNORECASE)
+        file_name = Path(match.group(1)).name if match else "CV"
+        suffix = Path(file_name).suffix.lower()
+        if not suffix:
+            content_type = response.headers.get("content-type", "").split(";", 1)[0].lower()
+            suffix = ".pdf" if content_type == "application/pdf" else ".docx" if "wordprocessingml" in content_type else ""
+        if suffix == ".pdf":
+            reader = PdfReader(BytesIO(content))
+            text = "\n".join(page.extract_text() or "" for page in reader.pages[:30])
+        elif suffix == ".docx":
+            document = Document(BytesIO(content))
+            text = "\n".join(p.text for p in document.paragraphs)
+            text += "\n" + "\n".join(cell.text for table in document.tables for row in table.rows for cell in row.cells)
+        else:
+            raise ValueError("CV screening supports PDF and DOCX files only")
+
+        text = " ".join(text.split())[:20_000]
+        if len(text) < 30:
+            raise ValueError("No readable text found in the CV; upload a text-based PDF or DOCX")
+        logger.info("tool_get_application_resume", application_id=application_id, characters=len(text))
+        return {"file_name": file_name, "text": text}
 
 async def get_job_requirements(
     job_id: str, auth_token: Optional[str] = None

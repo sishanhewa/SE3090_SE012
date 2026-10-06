@@ -52,6 +52,8 @@ async def planning_node(state: WorkflowState) -> WorkflowState:
 
         state["status"] = WorkflowStatusEnum.AWAITING_APPROVAL.value
         state["final_result"] = result.model_dump() if hasattr(result, 'model_dump') else {}
+        if result.plan:
+            state["plan"] = result.plan.model_dump()
 
         # Extract sub-results
         if result.candidate_analysis:

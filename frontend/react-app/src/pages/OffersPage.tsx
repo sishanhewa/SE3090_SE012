@@ -8,8 +8,13 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Plus, CheckCircle, Send } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 
 export default function OffersPage() {
+  const navigate = useNavigate();
+  const canApprove = useAuthStore((state) => state.user?.roles.some((role) =>
+    ['SystemAdmin', 'CompanyAdmin', 'HiringManager'].includes(role)) ?? false);
   const [offers, setOffers] = useState<OfferResponse[]>([]);
   const [applications, setApplications] = useState<ApplicationResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,6 +75,7 @@ export default function OffersPage() {
       fetchData();
     } catch (error) {
       console.error('Failed to update status', error);
+      alert('Offer status could not be changed from its current stage.');
     }
   };
 
@@ -108,7 +114,7 @@ export default function OffersPage() {
                 required
               >
                 <option value="" disabled>Select Application</option>
-                {applications.filter(a => a.status === 'Interview' || a.status === 'Shortlisted').map(app => (
+                {applications.filter(a => a.status === 'Interview').map(app => (
                   <option key={app.id} value={app.id}>
                     {app.jobTitle} - {app.candidateName} ({app.status})
                   </option>
@@ -230,15 +236,32 @@ export default function OffersPage() {
                     </TableCell>
                     <TableCell className="text-right space-x-2">
                       {offer.status === 'Draft' && (
-                        <Button variant="ghost" size="sm" onClick={() => handleUpdateStatus(offer.id, 'Sent')} title="Send to Candidate">
-                          <Send className="h-4 w-4 text-blue-500" />
+                        <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(offer.id, 'PendingApproval')}>
+                          Request approval
+                        </Button>
+                      )}
+                      {offer.status === 'PendingApproval' && canApprove && (
+                        <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(offer.id, 'Approved')}>Approve offer</Button>
+                      )}
+                      {offer.status === 'Approved' && (
+                        <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(offer.id, 'Sent')}>
+                          <Send className="h-4 w-4 mr-1" /> Publish to candidate
                         </Button>
                       )}
                       {offer.status === 'Sent' && (
                         <>
-                          <Button variant="ghost" size="sm" onClick={() => handleUpdateStatus(offer.id, 'Accepted')} title="Mark Accepted">
-                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(offer.id, 'Accepted')} title="Record candidate acceptance">
+                            <CheckCircle className="h-4 w-4 mr-1" /> Record acceptance
                           </Button>
+                        </>
+                      )}
+                      {offer.status === 'Accepted' && (
+                        <>
+                          <Button variant="outline" size="sm" onClick={() => navigate('/onboarding')}>Onboarding</Button>
+                          <Button variant="ghost" size="sm" onClick={async () => {
+                            try { await offersApi.resendHiredNotification(offer.id); alert('Hiring email sent.'); }
+                            catch { alert('Hiring email could not be sent. Check SMTP settings.'); }
+                          }}>Send hire email</Button>
                         </>
                       )}
                     </TableCell>

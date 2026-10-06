@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "dummy-key-for-local-dev")
     
     # Backend Integration
-    backend_url: str = os.getenv("BACKEND_URL", "http://localhost:5000/api")
+    backend_url: str = os.getenv("BACKEND_SERVICE_URL", "").rstrip("/") + "/api" if os.getenv("BACKEND_SERVICE_URL") else os.getenv("BACKEND_URL", "http://localhost:5155/api")
     
     # Workflow Settings
     max_steps_per_workflow: int = 15

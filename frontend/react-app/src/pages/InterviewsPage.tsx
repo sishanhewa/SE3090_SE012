@@ -70,6 +70,7 @@ export default function InterviewsPage() {
       fetchData();
     } catch (error) {
       console.error('Failed to update status', error);
+      alert('Could not send the calendar invitation. Check Google Calendar settings and retry.');
     }
   };
 
@@ -111,7 +112,7 @@ export default function InterviewsPage() {
                 required
               >
                 <option value="" disabled>Select Application</option>
-                {applications.filter(a => a.status === 'Shortlisted' || a.status === 'Interview').map(app => (
+                {applications.filter(a => a.status === 'Shortlisted').map(app => (
                   <option key={app.id} value={app.id}>
                     {app.jobTitle} - {app.candidateName} ({app.status})
                   </option>
@@ -147,7 +148,7 @@ export default function InterviewsPage() {
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
               />
               
-              <Button type="submit" className="w-full">Schedule Interview</Button>
+              <Button type="submit" className="w-full">Allocate slot and send invitation</Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -196,6 +197,8 @@ export default function InterviewsPage() {
                       }>
                         {interview.status}
                       </Badge>
+                      {!interview.calendarInvitationSent && interview.status === 'Proposed' &&
+                        <span className="ml-2 text-xs text-amber-700">Invitation pending</span>}
                     </TableCell>
                     <TableCell className="text-right space-x-2">
                       {interview.meetingUrl && (
@@ -207,7 +210,7 @@ export default function InterviewsPage() {
                       )}
                       {interview.status === 'Proposed' && (
                         <>
-                          <Button variant="ghost" size="sm" onClick={(e) => handleUpdateStatus(e, interview.id, 'Scheduled')}>
+                          <Button variant="ghost" size="sm" title="Retry Google Calendar invitation" onClick={(e) => handleUpdateStatus(e, interview.id, 'Scheduled')}>
                             <CheckCircle className="h-4 w-4 text-blue-500" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={(e) => handleCancel(e, interview.id)}>

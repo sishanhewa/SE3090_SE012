@@ -1,4 +1,4 @@
-import { apiClient } from './apiClient';
+import apiClient from './apiClient';
 
 export interface AgentStepResponse {
   id: string;
@@ -58,32 +58,32 @@ export interface WorkflowExecutionResponse {
 
 export const workflowsApi = {
   startScreening: async (applicationId: string, jobId: string) => {
-    const response = await apiClient.post<WorkflowExecutionResponse>('/api/workflows/recruitment-screening', { applicationId, jobId });
+    const response = await apiClient.post<WorkflowExecutionResponse>('/workflows/recruitment-screening', { applicationId, jobId });
     return response.data;
   },
   
   getById: async (id: string) => {
-    const response = await apiClient.get<WorkflowExecutionResponse>(`/api/workflows/${id}`);
+    const response = await apiClient.get<WorkflowExecutionResponse>(`/workflows/${id}`);
     return response.data;
   },
   
   getAll: async () => {
-    const response = await apiClient.get<WorkflowExecutionResponse[]>('/api/workflows');
+    const response = await apiClient.get<WorkflowExecutionResponse[]>('/workflows');
     return response.data;
   },
   
   approve: async (id: string, comments?: string) => {
-    const response = await apiClient.post<WorkflowExecutionResponse>(`/api/workflows/${id}/approve`, { comments });
+    const response = await apiClient.post<WorkflowExecutionResponse>(`/workflows/${id}/approve`, { comments });
     return response.data;
   },
   
   reject: async (id: string, comments?: string) => {
-    const response = await apiClient.post<WorkflowExecutionResponse>(`/api/workflows/${id}/reject`, { comments });
+    const response = await apiClient.post<WorkflowExecutionResponse>(`/workflows/${id}/reject`, { comments });
     return response.data;
   },
   
   requestRevision: async (id: string, comments: string) => {
-    const response = await apiClient.post<WorkflowExecutionResponse>(`/api/workflows/${id}/revise`, { comments });
+    const response = await apiClient.post<WorkflowExecutionResponse>(`/workflows/${id}/revise`, { comments });
     return response.data;
   }
 };

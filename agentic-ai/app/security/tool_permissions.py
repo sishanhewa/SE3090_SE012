@@ -1,6 +1,6 @@
 """Tool permission enforcement — least-privilege access control."""
 import structlog
-from typing import Any, Optional
+from typing import Any
 
 logger = structlog.get_logger()
 
@@ -12,11 +12,9 @@ AGENT_TOOL_PERMISSIONS: dict[str, set[str]] = {
         "compile_results",
     },
     "CandidateAnalysisAgent": {
+        "get_application",
         "get_job_requirements",
-        "get_candidate_profile",
-        "get_candidate_skills",
-        "get_candidate_experience",
-        "get_application_documents",
+        "get_application_resume",
     },
     "InterviewAgent": {
         "get_candidate_availability",

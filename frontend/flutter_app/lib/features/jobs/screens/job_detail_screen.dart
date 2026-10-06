@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../../core/api/api_client.dart';
+import '../../../core/api/api_client.dart';
 import 'job_apply_screen.dart';
 
 class JobDetailScreen extends StatefulWidget {

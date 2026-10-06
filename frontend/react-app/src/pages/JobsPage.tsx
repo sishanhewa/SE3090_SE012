@@ -18,15 +18,22 @@ export default function JobsPage() {
   const [companies, setCompanies] = useState<CompanyResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
+  const [selectedCompanyId, setSelectedCompanyId] = useState('');
+  const [requirementsText, setRequirementsText] = useState('');
+  const [skillsText, setSkillsText] = useState('');
+  const [educationLevel, setEducationLevel] = useState('None');
+
   const [formData, setFormData] = useState<CreateJobRequest>({
-    companyId: '',
     title: '',
     description: '',
-    department: '',
+    departmentId: '',
     location: '',
     employmentType: 'Full-time',
-    experienceLevel: 'Entry Level',
+    minimumExperience: 0,
+    vacancyCount: 1,
+    applicationDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    requirements: []
   });
 
   const fetchData = async () => {
@@ -48,18 +55,69 @@ export default function JobsPage() {
     fetchData();
   }, []);
 
+  const departmentsMap = new Map<string, string>();
+  jobs.forEach(j => {
+    if (j.departmentId && j.departmentName) {
+      departmentsMap.set(j.departmentId, j.departmentName);
+    }
+  });
+  const uniqueDepartments = Array.from(departmentsMap.entries()).map(([id, name]) => ({ id, name }));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await jobsApi.create('company-1', formData);
-      setIsModalOpen(false);
-      setFormData({ 
-        companyId: '', title: '', description: '', department: '', 
-        location: '', employmentType: 'Full-time', experienceLevel: 'Entry Level' 
+    if (!selectedCompanyId) {
+      alert("Please select a company.");
+      return;
+    }
+
+    // Parse requirements text
+    const parsedReqs = requirementsText
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .map(desc => ({
+        description: desc,
+        isMandatory: true,
+        weight: 10
+      }));
+
+    // Parse skills
+    const parsedSkills = skillsText
+      .split(',')
+      .map(skill => skill.trim())
+      .filter(skill => skill.length > 0)
+      .map(skill => ({
+        description: `Skill: ${skill}`,
+        isMandatory: true,
+        weight: 15
+      }));
+
+    const requirements = [...parsedReqs, ...parsedSkills];
+
+    if (educationLevel !== 'None') {
+      requirements.push({
+        description: `Minimum Education: ${educationLevel}`,
+        isMandatory: true,
+        weight: 10
       });
+    }
+
+    try {
+      await jobsApi.create(selectedCompanyId, { ...formData, requirements });
+      setIsModalOpen(false);
+      setFormData({
+        title: '', description: '', departmentId: '',
+        location: '', employmentType: 'Full-time', minimumExperience: 0,
+        vacancyCount: 1, applicationDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        requirements: []
+      });
+      setRequirementsText('');
+      setSkillsText('');
+      setEducationLevel('None');
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create job', error);
+      alert('Failed to create job: ' + (error.response?.data || error.message));
     }
   };
 
@@ -77,7 +135,7 @@ export default function JobsPage() {
             {isAdmin ? 'Manage job postings across all companies.' : 'Manage your company\'s job postings.'}
           </p>
         </div>
-        
+
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2">
@@ -85,16 +143,16 @@ export default function JobsPage() {
               Post a Job
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Job Posting</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <select 
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={formData.companyId}
-                  onChange={(e) => setFormData({ ...formData, companyId: e.target.value })}
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                  value={selectedCompanyId}
+                  onChange={(e) => setSelectedCompanyId(e.target.value)}
                   required
                 >
                   <option value="" disabled>Select Company</option>
@@ -118,30 +176,99 @@ export default function JobsPage() {
                   required
                 />
               </div>
-              <Input
-                placeholder="Department"
-                value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                required
-              />
-              <Input
-                placeholder="Location"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                required
-              />
-              <Input
-                placeholder="Employment Type (e.g. Full-time)"
-                value={formData.employmentType}
-                onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
-                required
-              />
-              <Input
-                placeholder="Experience Level"
-                value={formData.experienceLevel}
-                onChange={(e) => setFormData({ ...formData, experienceLevel: e.target.value })}
-                required
-              />
+              <div className="col-span-2">
+                <div className="text-sm font-medium mb-1">General Requirements (One per line)</div>
+                <textarea
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  placeholder="e.g. Willing to relocate"
+                  value={requirementsText}
+                  onChange={(e) => setRequirementsText(e.target.value)}
+                />
+              </div>
+              <div className="col-span-2">
+                <div className="text-sm font-medium mb-1">Required Skills (Comma separated)</div>
+                <Input
+                  placeholder="e.g. React, C#, SQL, Team Leadership"
+                  value={skillsText}
+                  onChange={(e) => setSkillsText(e.target.value)}
+                />
+              </div>
+              <div className="col-span-1">
+                <div className="text-sm font-medium mb-1">Education Requirement</div>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                  value={educationLevel}
+                  onChange={(e) => setEducationLevel(e.target.value)}
+                >
+                  <option value="None">No Minimum Education</option>
+                  <option value="High School">High School</option>
+                  <option value="Associate's Degree">Associate's Degree</option>
+                  <option value="Bachelor's Degree">Bachelor's Degree</option>
+                  <option value="Master's Degree">Master's Degree</option>
+                  <option value="PhD">PhD</option>
+                </select>
+              </div>
+
+              <div className="col-span-1">
+                <div className="text-sm font-medium mb-1">Department</div>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                  value={formData.departmentId}
+                  onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+                  required
+                >
+                  <option value="" disabled>Select Department</option>
+                  {uniqueDepartments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div className="col-span-1">
+                <Input
+                  placeholder="Location"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="col-span-1">
+                <Input
+                  placeholder="Employment Type (e.g. Full-time)"
+                  value={formData.employmentType}
+                  onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="col-span-1">
+                <Input
+                  placeholder="Minimum Experience (Years)"
+                  type="number"
+                  min="0"
+                  value={formData.minimumExperience}
+                  onChange={(e) => setFormData({ ...formData, minimumExperience: Number(e.target.value) })}
+                  required
+                />
+              </div>
+
+              <div className="col-span-1">
+                <Input
+                  placeholder="Vacancy Count"
+                  type="number"
+                  min="1"
+                  value={formData.vacancyCount}
+                  onChange={(e) => setFormData({ ...formData, vacancyCount: Number(e.target.value) })}
+                  required
+                />
+              </div>
+              <div className="col-span-1">
+                <div className="text-xs text-muted-foreground mb-1">Application Deadline</div>
+                <Input
+                  type="date"
+                  value={formData.applicationDeadline}
+                  onChange={(e) => setFormData({ ...formData, applicationDeadline: e.target.value })}
+                  required
+                />
+              </div>
+
               <Input
                 placeholder="Minimum Salary"
                 type="number"
@@ -154,6 +281,7 @@ export default function JobsPage() {
                 value={formData.salaryMax || ''}
                 onChange={(e) => setFormData({ ...formData, salaryMax: Number(e.target.value) })}
               />
+
               <div className="col-span-2 pt-2">
                 <Button type="submit" className="w-full">Create Job Posting</Button>
               </div>
@@ -193,7 +321,7 @@ export default function JobsPage() {
                   <TableRow key={job.id}>
                     <TableCell className="font-medium">{job.title}</TableCell>
                     <TableCell>{getCompanyName(job.companyId)}</TableCell>
-                    <TableCell>{job.department}</TableCell>
+                    <TableCell>{job.department || job.departmentName}</TableCell>
                     <TableCell>
                       <Badge variant={job.status === 'Published' ? 'default' : 'secondary'}>
                         {job.status}

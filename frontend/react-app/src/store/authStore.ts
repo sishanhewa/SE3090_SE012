@@ -8,6 +8,7 @@ interface User {
   firstName: string;
   lastName: string;
   roles: string[];
+  companyId?: string;
 }
 
 interface AuthState {

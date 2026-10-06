@@ -12,6 +12,7 @@ export interface ApplicationResponse {
   submittedAt: string;
   coverLetter?: string;
   aiScore?: number;
+  resumeDocumentId?: string | null;
   aiRecommendation?: string;
   createdAt: string;
   updatedAt?: string;

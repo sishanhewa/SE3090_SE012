@@ -87,6 +87,7 @@ class InterviewSchedulingInput(BaseModel):
     application_id: str
     candidate_profile_id: str
     interviewer_ids: list[str] = Field(default_factory=list)
+    screening_eligible: bool = True
     preferred_date_range_start: Optional[str] = None
     preferred_date_range_end: Optional[str] = None
 
@@ -112,10 +113,12 @@ class WorkflowResult(BaseModel):
     workflow_id: str
     application_id: str
     job_id: str
+    plan: Optional[WorkflowPlanOutput] = None
     candidate_analysis: Optional[CandidateAnalysisOutput] = None
     score: Optional[dict] = None
     validation: Optional[ValidationOutput] = None
     interview_proposal: Optional[InterviewSchedulingOutput] = None
     overall_recommendation: str = ""
+    screening_recommendation: str = "NeedsReview"
     requires_approval: bool = True
     summary: str = ""

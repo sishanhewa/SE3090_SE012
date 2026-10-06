@@ -1,5 +1,4 @@
 """Coordinator Agent - Plans and delegates the recruitment screening workflow."""
-import json
 import structlog
 from typing import Any, Optional
 
@@ -87,6 +86,12 @@ class CoordinatorAgent:
                     step_results, auth_token,
                 )
                 step_results[step.agent] = result
+
+                # Merge agent's tool logs
+                agent_instance = self._agents.get(step.agent)
+                if agent_instance and hasattr(agent_instance, 'tool_calls_log'):
+                    self.tool_calls_log.extend(agent_instance.tool_calls_log)
+
                 logger.info(
                     "coordinator_step_completed",
                     step=step.step_number,
@@ -100,6 +105,12 @@ class CoordinatorAgent:
                     error=str(e),
                 )
                 step_results[step.agent] = {"error": str(e)}
+
+                # Merge agent's tool logs even on failure if available
+                agent_instance = self._agents.get(step.agent)
+                if agent_instance and hasattr(agent_instance, 'tool_calls_log'):
+                    self.tool_calls_log.extend(agent_instance.tool_calls_log)
+                raise
 
         # Step 3: Compile final results
         final_result = await self._compile_results(
@@ -139,6 +150,10 @@ The plan must include all three agents in logical order.""",
                     "then InterviewAgent."
                 ),
             )
+            if [step.agent for step in plan.steps] != [
+                "CandidateAnalysisAgent", "ValidationAgent", "InterviewAgent"
+            ]:
+                raise ValueError("Planner returned an incomplete or unsafe agent sequence")
             self.tool_calls_log.append({
                 "tool_name": "create_plan",
                 "success": True,
@@ -219,11 +234,13 @@ The plan must include all three agents in logical order.""",
             return result
 
         elif step.agent == "InterviewAgent":
+            validation = previous_results.get("ValidationAgent")
             input_data = InterviewSchedulingInput(
                 workflow_id=workflow_id,
                 application_id=application_id,
                 candidate_profile_id=application_id,  # Will be resolved by tool
                 interviewer_ids=[],  # Will be populated from job data
+                screening_eligible=bool(validation and validation.is_valid),
             )
             result = await agent.execute(input_data, auth_token)
             return result
@@ -245,21 +262,20 @@ The plan must include all three agents in logical order.""",
         interview = step_results.get("InterviewAgent")
 
         # Determine overall recommendation
-        is_valid = True
+        is_valid = False
         if validation and hasattr(validation, 'is_valid'):
             is_valid = validation.is_valid
 
-        has_slots = False
-        if interview and hasattr(interview, 'proposed_slots'):
-            has_slots = len(interview.proposed_slots) > 0
-
-        if is_valid and has_slots:
-            recommendation = "Proceed to interview — awaiting manager approval"
+        analysis_complete = candidate_analysis is not None and hasattr(candidate_analysis, 'mandatory_skill_matches')
+        if not analysis_complete:
+            screening_recommendation = "NeedsReview"
+            recommendation = "CV evidence could not be verified; human review required."
         elif is_valid:
-            recommendation = "Candidate eligible but no interview slots available"
+            screening_recommendation = "Shortlist"
+            recommendation = "Recommend shortlist based on CV evidence; human decision required."
         else:
-            errors = validation.errors if validation and hasattr(validation, 'errors') else []
-            recommendation = f"Validation failed: {'; '.join(errors)}"
+            screening_recommendation = "DoNotShortlist"
+            recommendation = "Do not shortlist based on the CV evidence; human decision required."
 
         # Build summary
         summary_parts = []
@@ -279,10 +295,12 @@ The plan must include all three agents in logical order.""",
             workflow_id=workflow_id,
             application_id=application_id,
             job_id=job_id,
+            plan=plan,
             candidate_analysis=candidate_analysis if hasattr(candidate_analysis, 'model_dump') else None,
             validation=validation if hasattr(validation, 'model_dump') else None,
             interview_proposal=interview if hasattr(interview, 'model_dump') else None,
             overall_recommendation=recommendation,
+            screening_recommendation=screening_recommendation,
             requires_approval=True,
             summary=" | ".join(summary_parts),
         )

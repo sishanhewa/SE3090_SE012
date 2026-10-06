@@ -19,6 +19,8 @@ export interface InterviewResponse {
   meetingUrl?: string;
   location?: string;
   notes?: string;
+  calendarInvitationSent: boolean;
+  calendarEventId?: string;
   feedbacks?: InterviewFeedbackResponse[];
   createdAt: string;
   updatedAt: string;

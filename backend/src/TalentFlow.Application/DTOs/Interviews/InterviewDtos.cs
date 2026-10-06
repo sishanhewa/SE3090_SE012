@@ -38,6 +38,8 @@ public class InterviewResponse
     public string? MeetingUrl { get; set; }
     public string? Location { get; set; }
     public string? Notes { get; set; }
+    public bool CalendarInvitationSent { get; set; }
+    public string? CalendarEventId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public List<InterviewFeedbackResponse> Feedbacks { get; set; } = new();

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -21,6 +22,13 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
     builder.Host.UseSerilog();
+    if (builder.Environment.IsDevelopment())
+    {
+        builder.Configuration.AddJsonFile(
+            Path.Combine(builder.Environment.ContentRootPath, "appsettings.Development.local.json"),
+            optional: true, reloadOnChange: true);
+        builder.Configuration.AddEnvironmentVariables();
+    }
 
     // --- Service Registration ---
 
@@ -67,12 +75,17 @@ try
     {
         options.AddPolicy("AllowClients", policy =>
         {
-            policy.WithOrigins(
-                    "http://localhost:5173",   // React dev server
-                    "http://localhost:3000",   // React alternative
-                    "http://localhost:8080",   // Flutter web
-                    "http://10.0.2.2:5000"    // Android emulator
-                )
+            var allowedOrigins = new[]
+            {
+                "http://localhost:5173",   // React dev server
+                "http://localhost:3000",   // React alternative
+                "http://localhost:8080",   // Flutter web
+                "http://10.0.2.2:5000"    // Android emulator
+            };
+            var deployedFrontend = builder.Configuration["Frontend:Origin"];
+            if (!string.IsNullOrWhiteSpace(deployedFrontend))
+                allowedOrigins = allowedOrigins.Append(deployedFrontend.TrimEnd('/')).ToArray();
+            policy.WithOrigins(allowedOrigins)
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials();
@@ -80,7 +93,8 @@ try
     });
 
     // Controllers
-    builder.Services.AddControllers();
+    builder.Services.AddControllers().AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
     // Swagger with JWT support
     builder.Services.AddEndpointsApiExplorer();
@@ -146,9 +160,10 @@ try
     app.UseAuthorization();
     app.MapControllers();
 
-    // Seed database
-    using (var scope = app.Services.CreateScope())
+    // Demo users and known development passwords must not be created in deployed environments.
+    if (app.Environment.IsDevelopment())
     {
+        using var scope = app.Services.CreateScope();
         await DataSeeder.SeedAsync(scope.ServiceProvider);
     }
 

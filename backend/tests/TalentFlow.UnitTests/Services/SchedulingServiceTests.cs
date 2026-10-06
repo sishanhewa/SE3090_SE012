@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using TalentFlow.Domain.Entities;
 using TalentFlow.Domain.Enums;
 using TalentFlow.Infrastructure.Persistence;
@@ -67,6 +68,30 @@ public class SchedulingServiceTests
             60);
 
         Assert.True(result.IsSuccess);
-        Assert.NotEmpty(result.Data);
+        Assert.NotEmpty(result.Data!);
+    }
+
+    [Fact]
+    public async Task GetAvailableSlots_UsesConfiguredBusinessTimeZoneWithoutPanel()
+    {
+        using var context = CreateTestContext();
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(
+            new System.Collections.Generic.Dictionary<string, string?>
+            { ["Scheduling:TimeZoneId"] = "Asia/Colombo" }).Build();
+        var service = new SchedulingService(context, configuration);
+
+        var result = await service.GetAvailableSlotsAsync(Guid.NewGuid(), new(),
+            DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(10));
+
+        Assert.True(result.IsSuccess);
+        Assert.NotEmpty(result.Data!);
+        var zone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Colombo");
+        Assert.All(result.Data!, slot =>
+        {
+            var local = TimeZoneInfo.ConvertTimeFromUtc(slot.StartTime, zone);
+            Assert.InRange(local.Hour, 9, 16);
+            Assert.NotEqual(DayOfWeek.Saturday, local.DayOfWeek);
+            Assert.NotEqual(DayOfWeek.Sunday, local.DayOfWeek);
+        });
     }
 }

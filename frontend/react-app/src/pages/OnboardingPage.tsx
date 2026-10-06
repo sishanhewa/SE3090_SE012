@@ -5,22 +5,40 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { CheckSquare, Briefcase, CalendarDays, CheckCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { OnboardingTemplateList, EmployeeOnboardingProgress } from '../components/onboarding/OnboardingManagement';
+import { useAuthStore } from '../store/authStore';
+import { onboardingApi, type OnboardingTemplate } from '../api/onboardingApi';
+import apiClient from '../api/apiClient';
 
 export default function OnboardingPage() {
+  const storedCompanyId = useAuthStore((state) => state.user?.companyId);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const [resolvedCompanyId, setResolvedCompanyId] = useState<string | undefined>(storedCompanyId);
+  let tokenCompanyId: string | undefined;
+  try { tokenCompanyId = accessToken ? JSON.parse(atob(accessToken.split('.')[1])).CompanyId : undefined; }
+  catch { tokenCompanyId = undefined; }
+  const companyId = storedCompanyId ?? tokenCompanyId ?? resolvedCompanyId;
   const [employees, setEmployees] = useState<EmployeeResponse[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeResponse | null>(null);
-  const [checklist, setChecklist] = useState({
-    documents: false,
-    equipment: false,
-    accounts: false,
-    orientation: false
-  });
+  const [templates, setTemplates] = useState<OnboardingTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [taskRefresh, setTaskRefresh] = useState(0);
+
+  useEffect(() => {
+    if (storedCompanyId || tokenCompanyId) { setResolvedCompanyId(storedCompanyId ?? tokenCompanyId); return; }
+    apiClient.get<{ companyId?: string }>('/Auth/me')
+      .then((response) => setResolvedCompanyId(response.data.companyId))
+      .catch(() => setResolvedCompanyId(undefined));
+  }, [storedCompanyId, tokenCompanyId]);
 
   const fetchEmployees = async () => {
+    if (!companyId) { setLoading(false); return; }
     try {
-      const data = await employeesApi.getAll('company-1');
+      const data = await employeesApi.getAll(companyId);
+      const availableTemplates = await onboardingApi.getTemplates(companyId);
+      setTemplates(availableTemplates);
       // Filter only employees in Onboarding status
       setEmployees(data.items.filter((e: EmployeeResponse) => e.status === 'Onboarding'));
     } catch (error) {
@@ -32,26 +50,29 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [companyId]);
 
   const handleCompleteOnboarding = async () => {
-    if (!selectedEmployee) return;
-    
-    // Ensure all checklist items are completed
-    if (!Object.values(checklist).every(Boolean)) {
-      alert("Please complete all onboarding checklist items first.");
-      return;
-    }
+    if (!selectedEmployee || !companyId) return;
 
     try {
-      await employeesApi.update(selectedEmployee.id, 'company-1', {
+      await employeesApi.update(selectedEmployee.id, companyId, {
         status: 'Active'
       });
       setSelectedEmployee(null);
-      setChecklist({ documents: false, equipment: false, accounts: false, orientation: false });
       fetchEmployees();
     } catch (error) {
       console.error('Failed to complete onboarding', error);
+    }
+  };
+
+  const handleAssignTemplate = async () => {
+    if (!selectedEmployee || !selectedTemplateId) return;
+    try {
+      await onboardingApi.assignTemplate(selectedEmployee.id, selectedTemplateId);
+      setTaskRefresh((value) => value + 1);
+    } catch {
+      alert('Could not assign this template. Tasks may already be assigned.');
     }
   };
 
@@ -110,7 +131,6 @@ export default function OnboardingPage() {
                     <TableCell className="text-right">
                       <Button variant="outline" size="sm" onClick={() => {
                         setSelectedEmployee(emp);
-                        setChecklist({ documents: false, equipment: false, accounts: false, orientation: false });
                       }}>
                         Manage Onboarding
                       </Button>
@@ -124,7 +144,7 @@ export default function OnboardingPage() {
       </Card>
 
       <Dialog open={!!selectedEmployee} onOpenChange={(open) => !open && setSelectedEmployee(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Onboarding: {selectedEmployee?.name}</DialogTitle>
           </DialogHeader>
@@ -134,60 +154,33 @@ export default function OnboardingPage() {
               <div><strong>Start Date:</strong> {selectedEmployee ? new Date(selectedEmployee.startDate).toLocaleDateString() : ''}</div>
             </div>
 
-            <div className="space-y-4">
-              <h4 className="font-semibold">Checklist</h4>
-              
-              <label className="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-accent/50 transition-colors">
-                <input 
-                  type="checkbox" 
-                  className="w-5 h-5"
-                  checked={checklist.documents} 
-                  onChange={(e) => setChecklist({...checklist, documents: e.target.checked})} 
-                />
-                <span>Signed all tax and legal documents</span>
-              </label>
+            {selectedEmployee && (
+              <EmployeeOnboardingProgress employeeId={selectedEmployee.id} refreshKey={taskRefresh} />
+            )}
 
-              <label className="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-accent/50 transition-colors">
-                <input 
-                  type="checkbox" 
-                  className="w-5 h-5"
-                  checked={checklist.equipment} 
-                  onChange={(e) => setChecklist({...checklist, equipment: e.target.checked})} 
-                />
-                <span>Provided necessary equipment (Laptop, etc.)</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-accent/50 transition-colors">
-                <input 
-                  type="checkbox" 
-                  className="w-5 h-5"
-                  checked={checklist.accounts} 
-                  onChange={(e) => setChecklist({...checklist, accounts: e.target.checked})} 
-                />
-                <span>Created IT and email accounts</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-accent/50 transition-colors">
-                <input 
-                  type="checkbox" 
-                  className="w-5 h-5"
-                  checked={checklist.orientation} 
-                  onChange={(e) => setChecklist({...checklist, orientation: e.target.checked})} 
-                />
-                <span>Completed HR orientation</span>
-              </label>
-            </div>
+            {templates.length > 0 && (
+              <div className="flex gap-2">
+                <select className="flex-1 rounded-md border bg-background px-3 py-2" value={selectedTemplateId}
+                  onChange={(event) => setSelectedTemplateId(event.target.value)}>
+                  <option value="">Select onboarding template</option>
+                  {templates.map((template) => <option value={template.id} key={template.id}>{template.name}</option>)}
+                </select>
+                <Button variant="outline" onClick={handleAssignTemplate} disabled={!selectedTemplateId}>Assign tasks</Button>
+              </div>
+            )}
 
             <Button 
               className="w-full gap-2" 
               onClick={handleCompleteOnboarding}
-              disabled={!Object.values(checklist).every(Boolean)}
             >
-              <CheckCircle className="h-4 w-4" /> Complete Onboarding
+              <CheckCircle className="h-4 w-4" /> Mark Onboarding Complete
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {companyId ? <div className="pt-8 border-t"><OnboardingTemplateList companyId={companyId} onChanged={fetchEmployees} /></div>
+        : <p className="text-sm text-amber-700">Sign in with a company account to manage onboarding.</p>}
     </div>
   );
 }
