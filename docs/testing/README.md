@@ -1,6 +1,6 @@
 # SE3110 TalentFlow verified submission
 
-Verification date: 9 October 2026. The final editable report has 105 pages, native Word contents/figure/table fields, 34 numbered figures and 84 numbered tables. It follows the supplied reference report structure and documents the actual TalentFlow SE3090 system.
+Verification date: 9 October 2026. The final editable report has 105 pages, native Word contents/figure/table fields, 34 numbered figures and 84 numbered tables. The report uses A4 pages, Times New Roman, black editable text and plain white tables with single black borders. All 183 clickable index entries retain verified page numbers. It follows the supplied reference report structure and documents the actual TalentFlow SE3090 system.
 
 Final local execution: backend 59, React 25, Flutter 16, AI 52, application/security API 22, onboarding API 26, PostgreSQL 5. All 205 passed within the stated scope. k6 repeated checks and ZAP rules are separate. Backend coverage is 14.36% lines (1663/11580) and 15.24% branches (191/1253).
 
