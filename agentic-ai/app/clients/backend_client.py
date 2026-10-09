@@ -1,6 +1,6 @@
 """Client for calling back to the .NET backend to persist workflow results."""
+from app.clients.backend_url import backend_api_url
 import json
-import os
 import structlog
 import httpx
 from typing import Any
@@ -10,7 +10,6 @@ load_dotenv()
 
 logger = structlog.get_logger()
 
-from app.clients.backend_url import backend_api_url
 
 BACKEND_URL = backend_api_url()
 

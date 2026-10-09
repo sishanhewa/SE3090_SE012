@@ -1,4 +1,5 @@
 """Interview Scheduling Agent tools — availability checks and draft creation."""
+from app.clients.backend_url import backend_api_url
 import httpx
 import structlog
 from typing import Any, Optional
@@ -6,9 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 logger = structlog.get_logger()
 
-import os
 
-from app.clients.backend_url import backend_api_url
 
 BACKEND_BASE_URL = backend_api_url()
 

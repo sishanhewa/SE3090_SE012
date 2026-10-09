@@ -4,10 +4,12 @@ on:
   push:
     branches: [main, develop]
     paths:
+      - '.github/workflows/react-ci.yml'
       - 'frontend/react-app/**'
   pull_request:
-    branches: [main]
+    branches: [main, develop]
     paths:
+      - '.github/workflows/react-ci.yml'
       - 'frontend/react-app/**'
 
 jobs:
@@ -21,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/react-app/package-lock.json
 
@@ -34,9 +36,16 @@ jobs:
         working-directory: frontend/react-app
 
       - name: Run tests
-        run: npm run test -- --run
+        run: npm run test -- --run --reporter=verbose --reporter=junit --outputFile=test-results.xml
         working-directory: frontend/react-app
 
       - name: Build
         run: npm run build
         working-directory: frontend/react-app
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: react-ci-test-results
+          path: frontend/react-app/test-results.xml

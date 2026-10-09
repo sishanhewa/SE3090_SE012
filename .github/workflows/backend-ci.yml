@@ -4,10 +4,12 @@ on:
   push:
     branches: [main, develop]
     paths:
+      - '.github/workflows/backend-ci.yml'
       - 'backend/**'
   pull_request:
-    branches: [main]
+    branches: [main, develop]
     paths:
+      - '.github/workflows/backend-ci.yml'
       - 'backend/**'
 
 jobs:
@@ -51,9 +53,9 @@ jobs:
         working-directory: backend
         env:
           ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=talentflow_test;Username=test_user;Password=test_password"
-          Jwt__Key: "test-jwt-secret-key-minimum-32-characters-long-for-ci"
-          Jwt__Issuer: "TalentFlowAPI"
-          Jwt__Audience: "TalentFlowClients"
+          JwtSettings__Key: "test-jwt-secret-key-minimum-32-characters-long-for-ci"
+          JwtSettings__Issuer: "TalentFlowAPI"
+          JwtSettings__Audience: "TalentFlowClients"
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

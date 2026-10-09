@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
+from typing import List
 
 class ChatMessage(BaseModel):
     role: str = Field(..., description="Role of the sender: user, assistant, system")

@@ -1,12 +1,9 @@
 """LangGraph workflow graph for the recruitment screening pipeline."""
-import json
 import structlog
-from typing import Any, TypedDict, Annotated
+from typing import Any, TypedDict
 from langgraph.graph import StateGraph, END
 
-from app.clients.gemini_client import GeminiClient
 from app.agents.coordinator_agent import CoordinatorAgent
-from app.schemas.agent_schemas import WorkflowResult
 from app.schemas.workflow import WorkflowStatusEnum
 
 logger = structlog.get_logger()

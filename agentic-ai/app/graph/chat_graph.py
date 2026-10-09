@@ -1,6 +1,6 @@
 import os
 import structlog
-from typing import Optional, List, Any
+from typing import Optional, List
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
@@ -15,7 +15,8 @@ async def run_chat_workflow(messages: List[ChatMessage], company_id: str, auth_t
     logger.info("chat_workflow_started", message_count=len(messages))
 
     api_keys = [v for k, v in os.environ.items() if k.startswith("GOOGLE_API_KEY") and v]
-    if not api_keys: api_keys.append("")
+    if not api_keys:
+        api_keys.append("")
 
     # Get tools with context injected
     tools = build_chat_tools(auth_token, company_id)

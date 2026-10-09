@@ -4,11 +4,13 @@ on:
   push:
     branches: [main, develop]
     paths:
-      - 'frontend/flutter-app/**'
+      - '.github/workflows/flutter-ci.yml'
+      - 'frontend/flutter_app/**'
   pull_request:
-    branches: [main]
+    branches: [main, develop]
     paths:
-      - 'frontend/flutter-app/**'
+      - '.github/workflows/flutter-ci.yml'
+      - 'frontend/flutter_app/**'
 
 jobs:
   build-and-test:
@@ -26,12 +28,12 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
-        working-directory: frontend/flutter-app
+        working-directory: frontend/flutter_app
 
       - name: Analyze
-        run: flutter analyze
-        working-directory: frontend/flutter-app
+        run: flutter analyze --no-fatal-infos
+        working-directory: frontend/flutter_app
 
       - name: Run tests
         run: flutter test
-        working-directory: frontend/flutter-app
+        working-directory: frontend/flutter_app

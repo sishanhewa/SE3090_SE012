@@ -1,7 +1,7 @@
 import httpx
+from app.clients.backend_url import backend_api_url
 from typing import Optional, List, Dict, Any
 from langchain_core.tools import tool
-import os
 import structlog
 from app.agents.candidate_analysis_agent import CandidateAnalysisAgent
 from app.agents.interview_agent import InterviewAgent
@@ -10,7 +10,6 @@ from app.schemas.agent_schemas import CandidateAnalysisInput, InterviewSchedulin
 from app.clients.gemini_client import GeminiClient
 
 logger = structlog.get_logger()
-from app.clients.backend_url import backend_api_url
 
 BACKEND_BASE_URL = backend_api_url()
 

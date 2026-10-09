@@ -4,10 +4,12 @@ on:
   push:
     branches: [main, develop]
     paths:
+      - '.github/workflows/ai-ci.yml'
       - 'agentic-ai/**'
   pull_request:
-    branches: [main]
+    branches: [main, develop]
     paths:
+      - '.github/workflows/ai-ci.yml'
       - 'agentic-ai/**'
 
 jobs:
@@ -34,8 +36,15 @@ jobs:
         working-directory: agentic-ai
 
       - name: Run tests
-        run: pytest --tb=short -v
+        run: pytest tests/ --tb=short -v --junitxml=test-results.xml
         working-directory: agentic-ai
         env:
           GEMINI_API_KEY: "test-key-for-ci"
           BACKEND_INTERNAL_URL: "http://localhost:5000"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ai-ci-test-results
+          path: agentic-ai/test-results.xml

@@ -1,12 +1,8 @@
 """Tests for TalentFlow AI agents and tools."""
 import pytest
 from app.schemas.agent_schemas import (
-    CandidateAnalysisInput,
     CandidateAnalysisOutput,
-    ValidationInput,
     ValidationOutput,
-    InterviewSchedulingInput,
-    InterviewSchedulingOutput,
     WorkflowPlanOutput,
     PlanStep,
     SkillMatchResult,
@@ -14,7 +10,6 @@ from app.schemas.agent_schemas import (
 from app.tools.validation_tools import (
     validate_application_state,
     validate_scoring,
-    validate_scheduling,
     validate_authorization,
     validate_schema,
 )

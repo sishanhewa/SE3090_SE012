@@ -1,10 +1,10 @@
 """Candidate Analysis Agent tools — read-only data retrieval from backend API."""
+from app.clients.backend_url import backend_api_url
 import httpx
 import structlog
 from io import BytesIO
 from pathlib import Path
 import re
-import os
 from pypdf import PdfReader
 from docx import Document
 from typing import Any, Optional
@@ -12,7 +12,6 @@ from typing import Any, Optional
 logger = structlog.get_logger()
 
 # Base URL for the ASP.NET backend API
-from app.clients.backend_url import backend_api_url
 
 BACKEND_BASE_URL = backend_api_url()
 

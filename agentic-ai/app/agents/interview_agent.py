@@ -148,7 +148,7 @@ class InterviewAgent:
         ]
 
         if proposed_slots:
-            draft = await self._call_tool(
+            await self._call_tool(
                 "create_interview_draft",
                 create_interview_draft,
                 input_data.application_id,
