@@ -13,6 +13,21 @@ public class ApplicationRepository : Repository<ApplicationEntity>, IApplication
     {
     }
 
+    public override async Task UpdateAsync(ApplicationEntity entity, CancellationToken cancellationToken = default)
+    {
+        // New history records have client-generated IDs. Mark them Added before
+        // Update traverses the graph, otherwise EF attempts to update missing rows.
+        foreach (var history in entity.History)
+        {
+            if (Context.Entry(history).State == EntityState.Detached)
+            {
+                history.ApplicationId = entity.Id;
+                Context.Entry(history).State = EntityState.Added;
+            }
+        }
+        await base.UpdateAsync(entity, cancellationToken);
+    }
+
     public async Task<bool> HasAppliedAsync(Guid jobId, Guid candidateProfileId, CancellationToken cancellationToken = default)
     {
         return await DbSet.AnyAsync(
