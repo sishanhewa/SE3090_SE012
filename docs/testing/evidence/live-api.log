@@ -1,0 +1,22 @@
+TC-LIVE-001 PASS Seeded admin authenticates: HTTP 200
+TC-SEC-001 PASS Protected companies reject anonymous access: HTTP 401
+TC-SEC-002 PASS Malformed JWT is rejected: HTTP 401
+TC-SEC-003 PASS Wrong password is rejected: HTTP 401
+TC-SEC-004 PASS Public staff-role escalation is rejected: HTTP 400
+TC-SEC-005 PASS Malformed login input is rejected: HTTP 400
+TC-LIVE-002 PASS Register isolated candidate 1: HTTP 201
+TC-LIVE-003 PASS Create candidate profile 1: HTTP 201
+TC-LIVE-004 PASS Register isolated candidate 2: HTTP 201
+TC-LIVE-005 PASS Create candidate profile 2: HTTP 201
+TC-SEC-006 PASS Candidate cannot create company: HTTP 403
+TC-LIVE-006 PASS Public jobs can be browsed: HTTP 200
+TC-LIVE-007 PASS Candidate submits to published job: HTTP 201
+TC-LIVE-008 PASS Candidate sees persisted application: HTTP 200
+TC-SEC-007 PASS Other candidate cannot read application: HTTP 403
+TC-SEC-008 PASS Candidate cannot list staff applications: HTTP 403
+TC-LIVE-009 PASS Duplicate application is rejected: HTTP 409
+TC-LIVE-010 PASS Staff sees submitted application: HTTP 200
+TC-LIVE-011 PASS Candidate withdraws own application: HTTP 204
+TC-LIVE-012 PASS Staff sees persisted withdrawal: HTTP 200
+TC-LIVE-013 PASS Withdrawal is in application history: HTTP 200
+TC-SEC-009 PASS Other candidate cannot withdraw application: HTTP 403

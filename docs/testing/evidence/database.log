@@ -1,0 +1,23 @@
+BEGIN
+NOTICE:  TC-DB-001 PASS duplicate job candidate pair rejected
+NOTICE:  TC-DB-002 PASS orphan history rejected
+NOTICE:  TC-DB-003 PASS null status rejected
+NOTICE:  TC-DB-004 PASS live withdrawal and history persisted together
+DO
+SAVEPOINT
+UPDATE 3
+ROLLBACK
+NOTICE:  TC-DB-005 PASS rollback restores prior application data
+DO
+ROLLBACK
+                                            version                                             
+------------------------------------------------------------------------------------------------
+ PostgreSQL 16.15 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+(1 row)
+
+                 MigrationId                  
+----------------------------------------------
+ 20260914061956_InitialCreate
+ 20260927060312_Sprint3_WorkflowAndOnboarding
+(2 rows)
+

@@ -1,0 +1,67 @@
+/Users/sishanhewapathirana/Desktop/IREMP/SE3090_SE012/agentic-ai/venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-8.3.3, pluggy-1.6.0 -- /Users/sishanhewapathirana/Desktop/IREMP/SE3090_SE012/agentic-ai/venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20
+plugins: asyncio-0.24.0, langsmith-0.14.4, anyio-4.15.1
+asyncio: mode=Mode.STRICT, default_loop_scope=None
+collecting ... collected 52 items
+
+work/project/agentic-ai/tests/test_agents.py::TestValidationTools::test_validate_scoring_valid PASSED [  1%]
+work/project/agentic-ai/tests/test_agents.py::TestValidationTools::test_validate_scoring_wrong_total PASSED [  3%]
+work/project/agentic-ai/tests/test_agents.py::TestValidationTools::test_validate_scoring_wrong_recommendation PASSED [  5%]
+work/project/agentic-ai/tests/test_agents.py::TestValidationTools::test_validate_scoring_out_of_range PASSED [  7%]
+work/project/agentic-ai/tests/test_agents.py::TestValidationTools::test_validate_application_state_valid PASSED [  9%]
+work/project/agentic-ai/tests/test_agents.py::TestValidationTools::test_validate_application_state_wrong_status PASSED [ 11%]
+work/project/agentic-ai/tests/test_agents.py::TestValidationTools::test_validate_schema_missing_fields PASSED [ 13%]
+work/project/agentic-ai/tests/test_agents.py::TestValidationTools::test_validate_authorization_correct_role PASSED [ 15%]
+work/project/agentic-ai/tests/test_agents.py::TestValidationTools::test_validate_authorization_wrong_company PASSED [ 17%]
+work/project/agentic-ai/tests/test_agents.py::TestToolPermissions::test_allowed_tool PASSED [ 19%]
+work/project/agentic-ai/tests/test_agents.py::TestToolPermissions::test_blocked_tool PASSED [ 21%]
+work/project/agentic-ai/tests/test_agents.py::TestToolPermissions::test_unauthorized_tool PASSED [ 23%]
+work/project/agentic-ai/tests/test_agents.py::TestToolPermissions::test_prompt_safety_clean PASSED [ 25%]
+work/project/agentic-ai/tests/test_agents.py::TestToolPermissions::test_prompt_safety_injection PASSED [ 26%]
+work/project/agentic-ai/tests/test_agents.py::TestSchemas::test_candidate_analysis_output_schema PASSED [ 28%]
+work/project/agentic-ai/tests/test_agents.py::TestSchemas::test_validation_output_schema PASSED [ 30%]
+work/project/agentic-ai/tests/test_agents.py::TestSchemas::test_workflow_plan_schema PASSED [ 32%]
+work/project/agentic-ai/tests/test_business_rules.py::test_production_recommendation_boundaries[100-EligibleForInterview-parts0] PASSED [ 34%]
+work/project/agentic-ai/tests/test_business_rules.py::test_production_recommendation_boundaries[75-EligibleForInterview-parts1] PASSED [ 36%]
+work/project/agentic-ai/tests/test_business_rules.py::test_production_recommendation_boundaries[74-ManualReview-parts2] PASSED [ 38%]
+work/project/agentic-ai/tests/test_business_rules.py::test_production_recommendation_boundaries[60-ManualReview-parts3] PASSED [ 40%]
+work/project/agentic-ai/tests/test_business_rules.py::test_production_recommendation_boundaries[59-NotRecommended-parts4] PASSED [ 42%]
+work/project/agentic-ai/tests/test_business_rules.py::test_production_recommendation_boundaries[0-NotRecommended-parts5] PASSED [ 44%]
+work/project/agentic-ai/tests/test_business_rules.py::test_production_component_range_guards[mandatorySkillsScore-41] PASSED [ 46%]
+work/project/agentic-ai/tests/test_business_rules.py::test_production_component_range_guards[preferredSkillsScore-21] PASSED [ 48%]
+work/project/agentic-ai/tests/test_business_rules.py::test_production_component_range_guards[experienceScore-26] PASSED [ 50%]
+work/project/agentic-ai/tests/test_business_rules.py::test_production_component_range_guards[educationScore-11] PASSED [ 51%]
+work/project/agentic-ai/tests/test_business_rules.py::test_production_component_range_guards[certificationScore-6] PASSED [ 53%]
+work/project/agentic-ai/tests/test_business_rules.py::test_production_component_range_guards[mandatorySkillsScore--1] PASSED [ 55%]
+work/project/agentic-ai/tests/test_business_rules.py::test_production_total_must_equal_component_sum PASSED [ 57%]
+work/project/agentic-ai/tests/test_business_rules.py::test_workflow_result_defaults_to_human_approval PASSED [ 59%]
+work/project/agentic-ai/tests/test_business_rules.py::test_candidate_analysis_requires_application_id PASSED [ 61%]
+work/project/agentic-ai/tests/test_business_rules.py::test_validation_output_requires_validity_decision PASSED [ 63%]
+work/project/agentic-ai/tests/test_business_rules.py::test_workflow_plan_requires_steps PASSED [ 65%]
+work/project/agentic-ai/tests/test_cv_screening.py::test_attached_docx_is_read_and_used_for_skill_matching PASSED [ 67%]
+work/project/agentic-ai/tests/test_cv_screening.py::test_unreadable_docx_fails_instead_of_screening_empty_evidence PASSED [ 69%]
+work/project/agentic-ai/tests/test_cv_screening.py::test_screening_recommendation_comes_from_cv_checks_not_calendar_slots[True-Shortlist] PASSED [ 71%]
+work/project/agentic-ai/tests/test_cv_screening.py::test_screening_recommendation_comes_from_cv_checks_not_calendar_slots[False-DoNotShortlist] PASSED [ 73%]
+work/project/agentic-ai/tests/test_prompt_injection.py::TestPromptInjection::test_ignore_previous_instructions PASSED [ 75%]
+work/project/agentic-ai/tests/test_prompt_injection.py::TestPromptInjection::test_system_prompt_override PASSED [ 76%]
+work/project/agentic-ai/tests/test_prompt_injection.py::TestPromptInjection::test_role_override_attempt PASSED [ 78%]
+work/project/agentic-ai/tests/test_prompt_injection.py::TestPromptInjection::test_data_exfiltration_attempt PASSED [ 80%]
+work/project/agentic-ai/tests/test_prompt_injection.py::TestPromptInjection::test_instruction_injection_with_delimiters PASSED [ 82%]
+work/project/agentic-ai/tests/test_prompt_injection.py::TestPromptInjection::test_jailbreak_do_anything_now PASSED [ 84%]
+work/project/agentic-ai/tests/test_prompt_injection.py::TestPromptInjection::test_sql_injection_in_candidate_query PASSED [ 86%]
+work/project/agentic-ai/tests/test_prompt_injection.py::TestPromptInjection::test_safe_prompt_analysis_request PASSED [ 88%]
+work/project/agentic-ai/tests/test_prompt_injection.py::TestPromptInjection::test_safe_prompt_scoring_request PASSED [ 90%]
+work/project/agentic-ai/tests/test_prompt_injection.py::TestPromptInjection::test_safe_prompt_interview_request PASSED [ 92%]
+work/project/agentic-ai/tests/test_prompt_injection.py::TestPromptInjection::test_safe_prompt_with_technical_terms PASSED [ 94%]
+work/project/agentic-ai/tests/test_prompt_injection.py::TestPromptInjection::test_empty_prompt PASSED [ 96%]
+work/project/agentic-ai/tests/test_prompt_injection.py::TestPromptInjection::test_very_long_prompt PASSED [ 98%]
+work/project/agentic-ai/tests/test_prompt_injection.py::TestPromptInjection::test_unicode_injection PASSED [100%]
+
+- generated xml file: /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/evidence/ai.xml -
+============================== 52 passed in 0.78s ==============================

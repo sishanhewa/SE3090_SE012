@@ -1,0 +1,282 @@
+{
+  "base_url": "http://127.0.0.1:5155/api",
+  "run_date": "2026-10-09",
+  "checks": [
+    {
+      "id": "TC-LIVE-001",
+      "name": "Seeded admin authenticates",
+      "method": "POST",
+      "path": "/Auth/login",
+      "input": "credentials redacted",
+      "expected": "200 and body assertions",
+      "actual": "HTTP 200",
+      "status": "Pass",
+      "duration_ms": 217.34,
+      "detail": ""
+    },
+    {
+      "id": "TC-SEC-001",
+      "name": "Protected companies reject anonymous access",
+      "method": "GET",
+      "path": "/Companies",
+      "input": null,
+      "expected": "401",
+      "actual": "HTTP 401",
+      "status": "Pass",
+      "duration_ms": 2.88,
+      "detail": ""
+    },
+    {
+      "id": "TC-SEC-002",
+      "name": "Malformed JWT is rejected",
+      "method": "GET",
+      "path": "/Auth/me",
+      "input": "credentials redacted",
+      "expected": "401",
+      "actual": "HTTP 401",
+      "status": "Pass",
+      "duration_ms": 4.87,
+      "detail": ""
+    },
+    {
+      "id": "TC-SEC-003",
+      "name": "Wrong password is rejected",
+      "method": "POST",
+      "path": "/Auth/login",
+      "input": "credentials redacted",
+      "expected": "401",
+      "actual": "HTTP 401",
+      "status": "Pass",
+      "duration_ms": 85.65,
+      "detail": ""
+    },
+    {
+      "id": "TC-SEC-004",
+      "name": "Public staff-role escalation is rejected",
+      "method": "POST",
+      "path": "/Auth/register",
+      "input": "credentials redacted",
+      "expected": "400",
+      "actual": "HTTP 400",
+      "status": "Pass",
+      "duration_ms": 15.41,
+      "detail": ""
+    },
+    {
+      "id": "TC-SEC-005",
+      "name": "Malformed login input is rejected",
+      "method": "POST",
+      "path": "/Auth/login",
+      "input": "credentials redacted",
+      "expected": "400",
+      "actual": "HTTP 400",
+      "status": "Pass",
+      "duration_ms": 14.47,
+      "detail": ""
+    },
+    {
+      "id": "TC-LIVE-002",
+      "name": "Register isolated candidate 1",
+      "method": "POST",
+      "path": "/Auth/register",
+      "input": "credentials redacted",
+      "expected": "201 and body assertions",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 205.56,
+      "detail": ""
+    },
+    {
+      "id": "TC-LIVE-003",
+      "name": "Create candidate profile 1",
+      "method": "POST",
+      "path": "/CandidateProfiles",
+      "input": {
+        "summary": "SE3110 isolated integration verification"
+      },
+      "expected": "201 and body assertions",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 52.94,
+      "detail": ""
+    },
+    {
+      "id": "TC-LIVE-004",
+      "name": "Register isolated candidate 2",
+      "method": "POST",
+      "path": "/Auth/register",
+      "input": "credentials redacted",
+      "expected": "201 and body assertions",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 87.8,
+      "detail": ""
+    },
+    {
+      "id": "TC-LIVE-005",
+      "name": "Create candidate profile 2",
+      "method": "POST",
+      "path": "/CandidateProfiles",
+      "input": {
+        "summary": "SE3110 isolated integration verification"
+      },
+      "expected": "201 and body assertions",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 7.16,
+      "detail": ""
+    },
+    {
+      "id": "TC-SEC-006",
+      "name": "Candidate cannot create company",
+      "method": "POST",
+      "path": "/Companies",
+      "input": {
+        "name": "Unauthorized evidence company"
+      },
+      "expected": "403",
+      "actual": "HTTP 403",
+      "status": "Pass",
+      "duration_ms": 1.93,
+      "detail": ""
+    },
+    {
+      "id": "TC-LIVE-006",
+      "name": "Public jobs can be browsed",
+      "method": "GET",
+      "path": "/jobs",
+      "input": null,
+      "expected": "200 and body assertions",
+      "actual": "HTTP 200",
+      "status": "Pass",
+      "duration_ms": 108.69,
+      "detail": ""
+    },
+    {
+      "id": "TC-LIVE-007",
+      "name": "Candidate submits to published job",
+      "method": "POST",
+      "path": "/Applications/jobs/9fd61350-85e1-4aaa-b4a9-64714b2a0e32",
+      "input": {
+        "coverLetter": "SE3110 live workflow evidence"
+      },
+      "expected": "201 and body assertions",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 130.43,
+      "detail": ""
+    },
+    {
+      "id": "TC-LIVE-008",
+      "name": "Candidate sees persisted application",
+      "method": "GET",
+      "path": "/Applications/5e4be457-f637-4252-930d-3b858db248f2",
+      "input": null,
+      "expected": "200 and body assertions",
+      "actual": "HTTP 200",
+      "status": "Pass",
+      "duration_ms": 51.82,
+      "detail": ""
+    },
+    {
+      "id": "TC-SEC-007",
+      "name": "Other candidate cannot read application",
+      "method": "GET",
+      "path": "/Applications/5e4be457-f637-4252-930d-3b858db248f2",
+      "input": null,
+      "expected": "403",
+      "actual": "HTTP 403",
+      "status": "Pass",
+      "duration_ms": 6.44,
+      "detail": ""
+    },
+    {
+      "id": "TC-SEC-008",
+      "name": "Candidate cannot list staff applications",
+      "method": "GET",
+      "path": "/Applications",
+      "input": null,
+      "expected": "403",
+      "actual": "HTTP 403",
+      "status": "Pass",
+      "duration_ms": 1.12,
+      "detail": ""
+    },
+    {
+      "id": "TC-LIVE-009",
+      "name": "Duplicate application is rejected",
+      "method": "POST",
+      "path": "/Applications/jobs/9fd61350-85e1-4aaa-b4a9-64714b2a0e32",
+      "input": {
+        "coverLetter": "Duplicate"
+      },
+      "expected": "409",
+      "actual": "HTTP 409",
+      "status": "Pass",
+      "duration_ms": 8.01,
+      "detail": ""
+    },
+    {
+      "id": "TC-LIVE-010",
+      "name": "Staff sees submitted application",
+      "method": "GET",
+      "path": "/Applications/5e4be457-f637-4252-930d-3b858db248f2",
+      "input": null,
+      "expected": "200 and body assertions",
+      "actual": "HTTP 200",
+      "status": "Pass",
+      "duration_ms": 7.34,
+      "detail": ""
+    },
+    {
+      "id": "TC-LIVE-011",
+      "name": "Candidate withdraws own application",
+      "method": "POST",
+      "path": "/Applications/5e4be457-f637-4252-930d-3b858db248f2/withdraw",
+      "input": null,
+      "expected": "204",
+      "actual": "HTTP 204",
+      "status": "Pass",
+      "duration_ms": 23.49,
+      "detail": ""
+    },
+    {
+      "id": "TC-LIVE-012",
+      "name": "Staff sees persisted withdrawal",
+      "method": "GET",
+      "path": "/Applications/5e4be457-f637-4252-930d-3b858db248f2",
+      "input": null,
+      "expected": "200 and body assertions",
+      "actual": "HTTP 200",
+      "status": "Pass",
+      "duration_ms": 8.51,
+      "detail": ""
+    },
+    {
+      "id": "TC-LIVE-013",
+      "name": "Withdrawal is in application history",
+      "method": "GET",
+      "path": "/Applications/5e4be457-f637-4252-930d-3b858db248f2/history",
+      "input": null,
+      "expected": "200 and body assertions",
+      "actual": "HTTP 200",
+      "status": "Pass",
+      "duration_ms": 28.76,
+      "detail": ""
+    },
+    {
+      "id": "TC-SEC-009",
+      "name": "Other candidate cannot withdraw application",
+      "method": "POST",
+      "path": "/Applications/5e4be457-f637-4252-930d-3b858db248f2/withdraw",
+      "input": null,
+      "expected": "403",
+      "actual": "HTTP 403",
+      "status": "Pass",
+      "duration_ms": 16.53,
+      "detail": ""
+    }
+  ],
+  "passed": 22,
+  "failed": 0
+}

@@ -1,0 +1,28 @@
+/Users/sishanhewapathirana/Desktop/IREMP/SE3090_SE012/agentic-ai/venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-8.3.3, pluggy-1.6.0 -- /Users/sishanhewapathirana/Desktop/IREMP/SE3090_SE012/agentic-ai/venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20
+plugins: asyncio-0.24.0, langsmith-0.14.4, anyio-4.15.1
+asyncio: mode=Mode.STRICT, default_loop_scope=None
+collecting ... collected 14 items
+
+work/test_prompt_baseline.py::TestPromptInjection::test_ignore_previous_instructions PASSED [  7%]
+work/test_prompt_baseline.py::TestPromptInjection::test_system_prompt_override PASSED [ 14%]
+work/test_prompt_baseline.py::TestPromptInjection::test_role_override_attempt PASSED [ 21%]
+work/test_prompt_baseline.py::TestPromptInjection::test_data_exfiltration_attempt PASSED [ 28%]
+work/test_prompt_baseline.py::TestPromptInjection::test_instruction_injection_with_delimiters XFAIL [ 35%]
+work/test_prompt_baseline.py::TestPromptInjection::test_jailbreak_do_anything_now XFAIL [ 42%]
+work/test_prompt_baseline.py::TestPromptInjection::test_sql_injection_in_candidate_query PASSED [ 50%]
+work/test_prompt_baseline.py::TestPromptInjection::test_safe_prompt_analysis_request PASSED [ 57%]
+work/test_prompt_baseline.py::TestPromptInjection::test_safe_prompt_scoring_request PASSED [ 64%]
+work/test_prompt_baseline.py::TestPromptInjection::test_safe_prompt_interview_request PASSED [ 71%]
+work/test_prompt_baseline.py::TestPromptInjection::test_safe_prompt_with_technical_terms PASSED [ 78%]
+work/test_prompt_baseline.py::TestPromptInjection::test_empty_prompt PASSED [ 85%]
+work/test_prompt_baseline.py::TestPromptInjection::test_very_long_prompt PASSED [ 92%]
+work/test_prompt_baseline.py::TestPromptInjection::test_unicode_injection PASSED [100%]
+
+======================== 12 passed, 2 xfailed in 0.07s =========================

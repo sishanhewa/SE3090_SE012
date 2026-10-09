@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="25" failures="0" errors="0" time="0.565334542">
+    <testsuite name="src/__tests__/pages/LoginPage.test.tsx" timestamp="2026-10-09T07:11:27.543Z" hostname="Sishans-MacBook-Pro.local" tests="17" failures="0" errors="0" skipped="0" time="0.5614905">
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should render the login form with email and password fields" time="0.071249833">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should render the TalentFlow AI branding" time="0.00426625">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should display &quot;Welcome back&quot; heading" time="0.002621916">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should have required attribute on email input" time="0.00276625">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should have required attribute on password input" time="0.002638334">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should have email type on email input" time="0.002165709">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should have password type on password input" time="0.001781583">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should update email field when user types" time="0.063380292">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should update password field when user types" time="0.042664125">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should call login function on form submit" time="0.103353084">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should clear error before login attempt" time="0.070843166">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should display error message when error exists" time="0.002396958">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should not display error message when no error" time="0.002093083">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should show loading indicator when isLoading is true" time="0.003550333">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should disable submit button when loading" time="0.008244125">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should navigate to home on successful login" time="0.094633458">
+        </testcase>
+        <testcase classname="src/__tests__/pages/LoginPage.test.tsx" name="LoginPage &gt; should not navigate when login fails" time="0.081546917">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/__tests__/store/authStore.test.ts" timestamp="2026-10-09T07:11:27.544Z" hostname="Sishans-MacBook-Pro.local" tests="8" failures="0" errors="0" skipped="0" time="0.003844042">
+        <testcase classname="src/__tests__/store/authStore.test.ts" name="authStore &gt; should have correct initial state" time="0.001012792">
+        </testcase>
+        <testcase classname="src/__tests__/store/authStore.test.ts" name="authStore &gt; should set loading state during login" time="0.000321125">
+        </testcase>
+        <testcase classname="src/__tests__/store/authStore.test.ts" name="authStore &gt; should set auth data on successful login" time="0.000508208">
+        </testcase>
+        <testcase classname="src/__tests__/store/authStore.test.ts" name="authStore &gt; should set error on failed login" time="0.000246625">
+        </testcase>
+        <testcase classname="src/__tests__/store/authStore.test.ts" name="authStore &gt; should set default error message when no server message" time="0.000128417">
+        </testcase>
+        <testcase classname="src/__tests__/store/authStore.test.ts" name="authStore &gt; should clear all auth data on logout" time="0.000185958">
+        </testcase>
+        <testcase classname="src/__tests__/store/authStore.test.ts" name="authStore &gt; should clear error when clearError is called" time="0.000092833">
+        </testcase>
+        <testcase classname="src/__tests__/store/authStore.test.ts" name="authStore &gt; should call the correct API endpoint on login" time="0.000735834">
+        </testcase>
+    </testsuite>
+</testsuites>

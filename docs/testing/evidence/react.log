@@ -1,0 +1,35 @@
+
+ RUN  v3.2.7 /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/frontend/react-app
+
+ ✓ src/__tests__/store/authStore.test.ts > authStore > should have correct initial state 1ms
+ ✓ src/__tests__/store/authStore.test.ts > authStore > should set loading state during login 0ms
+ ✓ src/__tests__/store/authStore.test.ts > authStore > should set auth data on successful login 1ms
+ ✓ src/__tests__/store/authStore.test.ts > authStore > should set error on failed login 0ms
+ ✓ src/__tests__/store/authStore.test.ts > authStore > should set default error message when no server message 0ms
+ ✓ src/__tests__/store/authStore.test.ts > authStore > should clear all auth data on logout 0ms
+ ✓ src/__tests__/store/authStore.test.ts > authStore > should clear error when clearError is called 0ms
+ ✓ src/__tests__/store/authStore.test.ts > authStore > should call the correct API endpoint on login 1ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should render the login form with email and password fields 71ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should render the TalentFlow AI branding 4ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should display "Welcome back" heading 3ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should have required attribute on email input 3ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should have required attribute on password input 3ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should have email type on email input 2ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should have password type on password input 2ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should update email field when user types 63ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should update password field when user types 43ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should call login function on form submit 103ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should clear error before login attempt 71ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should display error message when error exists 2ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should not display error message when no error 2ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should show loading indicator when isLoading is true 4ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should disable submit button when loading 8ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should navigate to home on successful login 95ms
+ ✓ src/__tests__/pages/LoginPage.test.tsx > LoginPage > should not navigate when login fails 82ms
+
+ Test Files  2 passed (2)
+      Tests  25 passed (25)
+   Start at  12:41:25
+   Duration  1.63s (transform 89ms, setup 176ms, collect 256ms, tests 565ms, environment 818ms, prepare 94ms)
+
+JUNIT report written to /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/evidence/react.xml

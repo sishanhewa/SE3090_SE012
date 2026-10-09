@@ -28,12 +28,3 @@ The local test snapshot combines the supplied working-tree tests with verified r
 Remote CI results apply only to each run's source SHA. See delivery-status.md for remote versus local component delivery. The original Desktop project checkout was preserved because it contains uncommitted changes, including a CV-tool deletion that prevents AI test collection. The verification uses the committed CV retrieval implementation.
 
 The report, complete case register, defect register, screenshots, XML/TRX/JSON outputs and source bundle provide the remaining submission evidence. Each member must review and personally demonstrate their assigned tests and declare AI assistance according to module guidance.
-
-## Objectives and acceptance
-Verify component business rules, invalid and boundary inputs, authentication, owner isolation, persistence, selected AI safety rules and local performance. Require all selected functional assertions and configured performance thresholds to pass after fixes. Retain before/after evidence and document coverage limits.
-
-## Responsibilities
-Rosa: company/job service tests and k6. Hewapathirana: application persistence, React tests and shared API/database verification. Madhushan: interview/offer tests and production Flutter widget tests. Dewmini: onboarding tests, production AI scoring and prompt safety. Exact component Git authors and branches follow priority_instructions.md. Assigned responsibility must be personally reviewed and demonstrated in the viva.
-
-## Actual verification schedule
-On 9 October 2026: inspect requirements and baseline; run component suites; reproduce the PostgreSQL withdrawal failure; repair and retest; replace weak test-only constants and generic widgets; run live security, database and k6 checks; collect coverage; prepare and visually verify the report. The course deadline was 8 October 2026; this verification is dated accurately.

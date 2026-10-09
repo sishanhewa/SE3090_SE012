@@ -1,0 +1,18 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  TalentFlow.Domain -> /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/backend/src/TalentFlow.Domain/bin/Debug/net8.0/TalentFlow.Domain.dll
+  TalentFlow.Application -> /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/backend/src/TalentFlow.Application/bin/Debug/net8.0/TalentFlow.Application.dll
+/Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/backend/src/TalentFlow.Infrastructure/Repositories/JobRepository.cs(41,38): warning CS8602: Dereference of a possibly null reference. [/Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/backend/src/TalentFlow.Infrastructure/TalentFlow.Infrastructure.csproj]
+  TalentFlow.Infrastructure -> /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/backend/src/TalentFlow.Infrastructure/bin/Debug/net8.0/TalentFlow.Infrastructure.dll
+  TalentFlow.UnitTests -> /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/backend/tests/TalentFlow.UnitTests/bin/Debug/net8.0/TalentFlow.UnitTests.dll
+Test run for /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/backend/tests/TalentFlow.UnitTests/bin/Debug/net8.0/TalentFlow.UnitTests.dll (.NETCoreApp,Version=v8.0)
+VSTest version 17.11.1 (arm64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+Results File: /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/evidence/backend-final/backend.trx
+
+Passed!  - Failed:     0, Passed:    56, Skipped:     0, Total:    56, Duration: 622 ms - TalentFlow.UnitTests.dll (net8.0)
+
+Attachments:
+  /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/evidence/backend-final/a1e83ada-cb4f-4147-8199-e5d8a765fb8f/coverage.cobertura.xml
