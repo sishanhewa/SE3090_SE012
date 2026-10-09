@@ -1,18 +1,20 @@
 # Git delivery status
 
-Verification date: 9 October 2026.
+Shared work is on develop under sishanhewa, with email sishanhewa4@gmail.com. Shared CI repair 3983a74 and application/React pull requests 2 and 3 are pushed and merged. The final report/evidence revision is also delivered on develop; the bundle's delivery-manifest.json records its exact SHA.
 
-Shared CI repair 3983a74 is pushed to develop. Lead application and React regression pull requests 2 and 3 are merged:
 - https://github.com/sishanhewa/SE3090_SE012/pull/2
 - https://github.com/sishanhewa/SE3090_SE012/pull/3
 
-Only sishanhewa is authenticated. The priority instructions require each member account for component pushes. Permission to use the lead account for the other members' pushes was requested and remains pending. Their configured authors and emails were verified locally, and their commits remain ready on the prescribed branches. No other member credentials were invented or used.
+Only the lead account is authenticated. The priority instructions require each responsible member's account for component pushes. Other member pushes remain pending; they were not performed using the lead's credentials. Configured commit authors identify assigned ownership, not proof that a student personally authored or demonstrated AI-assisted work.
 
-Local component commits:
-- develop / sishanhewa / 3983a74d30f83c654e8732c19a7c12478b18725a
-- feature/s1-company-jobs / vihara-rosa / 6cfc9bb32605dc1a6f8bff29cfef59feb6b43420
-- feature/s2-candidates-apps / sishanhewa / b5caa824f59ea883878d801887f54836741d3b00
-- feature/s3-interviews-hiring / gaveeshamadhushan / 755a7e8c569a879f28d23ecc9f99d76f9fc5d455
-- feature/s4-employees-onboarding / chenu222 / 3c3710eecb9ffe779d02d85d1804966bf4cda6d7
+Prepared local component branches:
+- feature/s1-company-jobs: vihara-rosa / rosavihara@gmail.com / 6cfc9bb32605dc1a6f8bff29cfef59feb6b43420
+- feature/s2-candidates-apps: sishanhewa / sishanhewa4@gmail.com / b129a30231c0bfebbdea63dee70f796b430c51e1
+- feature/s3-interviews-hiring: gaveeshamadhushan / gaveeshamadhushan15@gmail.com / fc8dd245c6d0275705afa4ca78edfaf728d760fc (test commit 755a7e8)
+- feature/s4-employees-onboarding: chenu222 / dewminichethani222@gmail.com / 5340ee3e2a8d92220e19146fa6414cdf2f97e42c
 
-The final mobile replacement also appears in commit 755a7e8. The lead TypeScript import correction is b129a30. The Git bundle retains all prepared component branches. The complete local verification snapshot is supplied as source and evidence; remote CI at an earlier SHA can differ. AI CI at 37367e4 fails three safety assertions because the member safety implementation is not yet delivered.
+The M4 final commit repairs employee UTC storage, duplicate onboarding route, and new status history insertion, with regression tests. It follows a merge of develop. All five branches are retained in testing-branches.bundle. The exact local verification composite is supplied separately because incomplete member pushes mean remote develop differs.
+
+To deliver a pending member branch, authenticate its required account, verify identity, fetch the bundle into that member's checkout, merge latest origin/develop under the required configured author, rerun affected tests, push the prescribed branch and create its PR into develop. Never replace the responsible member's authentication with another account without an explicit change to the priority instruction.
+
+Native GitHub screenshots show backend, React and Flutter passes at their recorded source SHAs and an AI failure before the local member fix. They do not assert that the complete 205-case local composite already passed remote CI.

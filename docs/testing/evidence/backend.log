@@ -10,9 +10,9 @@ VSTest version 17.11.1 (arm64)
 
 Starting test execution, please wait...
 A total of 1 test files matched the specified pattern.
-Results File: /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/evidence/backend-final/backend.trx
+Results File: /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/evidence/backend-release/backend.trx
 
-Passed!  - Failed:     0, Passed:    56, Skipped:     0, Total:    56, Duration: 622 ms - TalentFlow.UnitTests.dll (net8.0)
+Passed!  - Failed:     0, Passed:    59, Skipped:     0, Total:    59, Duration: 750 ms - TalentFlow.UnitTests.dll (net8.0)
 
 Attachments:
-  /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/evidence/backend-final/a1e83ada-cb4f-4147-8199-e5d8a765fb8f/coverage.cobertura.xml
+  /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/evidence/backend-release/168e3d04-a61c-4c4c-809b-adcb876a6638/coverage.cobertura.xml

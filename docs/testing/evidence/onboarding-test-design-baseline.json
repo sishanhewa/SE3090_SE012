@@ -1,0 +1,104 @@
+{
+  "base_url": "http://127.0.0.1:5155/api",
+  "run_date": "2026-10-09",
+  "checks": [
+    {
+      "id": "TC-ONLIVE-001",
+      "name": "Administrator login",
+      "method": "POST",
+      "path": "/Auth/login",
+      "input": "credentials redacted",
+      "expected": "200 and body assertions",
+      "actual": "HTTP 200",
+      "status": "Pass",
+      "duration_ms": 105.92,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-002",
+      "name": "Register synthetic onboarding candidate",
+      "method": "POST",
+      "path": "/Auth/register",
+      "input": "credentials redacted",
+      "expected": "201 and body assertions",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 138.47,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-003",
+      "name": "Create onboarding candidate profile",
+      "method": "POST",
+      "path": "/CandidateProfiles",
+      "input": {
+        "summary": "Synthetic SE3110 verification profile"
+      },
+      "expected": "201",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 26.97,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-004",
+      "name": "Retrieve published job fixture",
+      "method": "GET",
+      "path": "/jobs",
+      "input": null,
+      "expected": "200 and body assertions",
+      "actual": "HTTP 200",
+      "status": "Pass",
+      "duration_ms": 16.26,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-005",
+      "name": "Submit interview candidate application",
+      "method": "POST",
+      "path": "/Applications/jobs/9fd61350-85e1-4aaa-b4a9-64714b2a0e32",
+      "input": {
+        "coverLetter": "Synthetic interview safe-failure verification"
+      },
+      "expected": "201 and body assertions",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 28.95,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-006",
+      "name": "Move application into screening",
+      "method": "PATCH",
+      "path": "/Applications/237d94fb-777a-488e-81a2-cd83ebe1ccb7/status",
+      "input": {
+        "status": "Screening",
+        "notes": "Verification review"
+      },
+      "expected": "204",
+      "actual": "HTTP 204",
+      "status": "Pass",
+      "duration_ms": 63.53,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-007",
+      "name": "Shortlist reviewed application",
+      "method": "PATCH",
+      "path": "/Applications/237d94fb-777a-488e-81a2-cd83ebe1ccb7/status",
+      "input": {
+        "status": "Shortlisted",
+        "notes": "Verification shortlist"
+      },
+      "expected": "204",
+      "actual": "HTTP 400",
+      "status": "Fail",
+      "duration_ms": 10.73,
+      "detail": ""
+    }
+  ],
+  "ids": {},
+  "passed": 6,
+  "failed": 1,
+  "scope": "Live API and PostgreSQL. Calendar unavailable. Employee created independently through staff endpoint; no interview fixtures or data altered to bypass approval."
+}

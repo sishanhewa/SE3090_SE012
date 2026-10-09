@@ -1,0 +1,10 @@
+  TalentFlow.Domain -> /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/backend/src/TalentFlow.Domain/bin/Debug/net8.0/TalentFlow.Domain.dll
+  TalentFlow.Application -> /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/backend/src/TalentFlow.Application/bin/Debug/net8.0/TalentFlow.Application.dll
+  TalentFlow.Infrastructure -> /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/backend/src/TalentFlow.Infrastructure/bin/Debug/net8.0/TalentFlow.Infrastructure.dll
+  TalentFlow.Api -> /Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/backend/src/TalentFlow.API/bin/Debug/net8.0/TalentFlow.Api.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.45

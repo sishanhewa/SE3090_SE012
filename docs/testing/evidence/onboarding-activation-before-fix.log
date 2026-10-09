@@ -1,0 +1,34 @@
+TC-ONLIVE-001 PASS Administrator login: HTTP 200
+TC-ONLIVE-002 PASS Register synthetic onboarding candidate: HTTP 201
+TC-ONLIVE-003 PASS Create onboarding candidate profile: HTTP 201
+TC-ONLIVE-004 PASS Retrieve published job fixture: HTTP 200
+TC-ONLIVE-005 PASS Submit interview candidate application: HTTP 201
+TC-ONLIVE-006 PASS Move application into screening: HTTP 204
+TC-ONLIVE-007 PASS Direct shortlist cannot bypass reviewed AI workflow: HTTP 400
+TC-ONLIVE-008 PASS Unshortlisted application cannot schedule interview: HTTP 400
+TC-ONLIVE-009 PASS Unknown interview does not disclose data: HTTP 403
+TC-ONLIVE-010 PASS Candidate cannot create an interview: HTTP 403
+TC-ONLIVE-011 PASS Offer requires completed interview: HTTP 400
+TC-ONLIVE-012 PASS Staff creates separate onboarding employee: HTTP 201
+TC-ONLIVE-013 PASS Activation requires assigned template: HTTP 400
+TC-ONLIVE-014 PASS Empty onboarding template rejected: HTTP 400
+TC-ONLIVE-015 PASS Create two-task onboarding template: HTTP 200
+TC-ONLIVE-016 PASS Assign onboarding tasks once: HTTP 200
+TC-ONLIVE-017 PASS Duplicate assignment rejected: HTTP 400
+TC-ONLIVE-018 PASS Activation blocked by mandatory tasks: HTTP 400
+TC-ONLIVE-019 PASS Owner can read assigned tasks: HTTP 200
+TC-ONLIVE-020 PASS Anonymous task access rejected: HTTP 401
+TC-ONLIVE-021 PASS Complete first task as owner: HTTP 200
+TC-ONLIVE-022 PASS One incomplete task still blocks activation: HTTP 400
+TC-ONLIVE-023 PASS Complete second task as owner: HTTP 200
+TC-ONLIVE-024 FAIL Staff activates employee after completion: HTTP 500
+Traceback (most recent call last):
+  File "/Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/docs/testing/scripts/onboarding_api_tests.py", line 36, in <module>
+    c(24,'Staff activates employee after completion','PUT',f'/companies/{cid}/employees/{eid}',200,{'status':'Active'},at,predicate=lambda b:b['status']=='Active')
+  File "/Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/docs/testing/scripts/onboarding_api_tests.py", line 10, in c
+    return check(f'TC-ONLIVE-{n:03}',name,method,path,expected,data,token,predicate)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sishanhewapathirana/Documents/Codex/2026-10-09/x20/work/project/docs/testing/scripts/live_api_tests.py", line 32, in check
+    if not ok: raise AssertionError(f'{name}: {status} {body}')
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Staff activates employee after completion: 500 {'error': 'An unexpected error occurred.', 'errorCode': 'INTERNAL_ERROR', 'validationErrors': None, 'timestamp': '2026-10-09T07:51:34.410711Z'}

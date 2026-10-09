@@ -1,0 +1,184 @@
+{
+  "base_url": "http://127.0.0.1:5155/api",
+  "run_date": "2026-10-09",
+  "checks": [
+    {
+      "id": "TC-ONLIVE-001",
+      "name": "Administrator login",
+      "method": "POST",
+      "path": "/Auth/login",
+      "input": "credentials redacted",
+      "expected": "200 and body assertions",
+      "actual": "HTTP 200",
+      "status": "Pass",
+      "duration_ms": 80.04,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-002",
+      "name": "Register synthetic onboarding candidate",
+      "method": "POST",
+      "path": "/Auth/register",
+      "input": "credentials redacted",
+      "expected": "201 and body assertions",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 65.3,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-003",
+      "name": "Create onboarding candidate profile",
+      "method": "POST",
+      "path": "/CandidateProfiles",
+      "input": {
+        "summary": "Synthetic SE3110 verification profile"
+      },
+      "expected": "201",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 3.0,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-004",
+      "name": "Retrieve published job fixture",
+      "method": "GET",
+      "path": "/jobs",
+      "input": null,
+      "expected": "200 and body assertions",
+      "actual": "HTTP 200",
+      "status": "Pass",
+      "duration_ms": 2.6,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-005",
+      "name": "Submit interview candidate application",
+      "method": "POST",
+      "path": "/Applications/jobs/9fd61350-85e1-4aaa-b4a9-64714b2a0e32",
+      "input": {
+        "coverLetter": "Synthetic interview safe-failure verification"
+      },
+      "expected": "201 and body assertions",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 6.14,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-006",
+      "name": "Move application into screening",
+      "method": "PATCH",
+      "path": "/Applications/bdef02d7-3fb2-47c4-81b5-25b694956dca/status",
+      "input": {
+        "status": "Screening",
+        "notes": "Verification review"
+      },
+      "expected": "204",
+      "actual": "HTTP 204",
+      "status": "Pass",
+      "duration_ms": 5.51,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-007",
+      "name": "Direct shortlist cannot bypass reviewed AI workflow",
+      "method": "PATCH",
+      "path": "/Applications/bdef02d7-3fb2-47c4-81b5-25b694956dca/status",
+      "input": {
+        "status": "Shortlisted",
+        "notes": "Verification shortlist"
+      },
+      "expected": "400 and body assertions",
+      "actual": "HTTP 400",
+      "status": "Pass",
+      "duration_ms": 3.37,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-008",
+      "name": "Unshortlisted application cannot schedule interview",
+      "method": "POST",
+      "path": "/Interviews",
+      "input": {
+        "applicationId": "bdef02d7-3fb2-47c4-81b5-25b694956dca",
+        "scheduledAt": "2026-10-12T07:47:21.260135+00:00",
+        "durationMinutes": 60
+      },
+      "expected": "400 and body assertions",
+      "actual": "HTTP 400",
+      "status": "Pass",
+      "duration_ms": 34.52,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-009",
+      "name": "Unknown interview does not disclose data",
+      "method": "GET",
+      "path": "/Interviews/00000000-0000-0000-0000-000000000001",
+      "input": null,
+      "expected": "403",
+      "actual": "HTTP 403",
+      "status": "Pass",
+      "duration_ms": 8.91,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-010",
+      "name": "Candidate cannot create an interview",
+      "method": "POST",
+      "path": "/Interviews",
+      "input": {
+        "applicationId": "bdef02d7-3fb2-47c4-81b5-25b694956dca",
+        "scheduledAt": "2026-10-12T07:47:21.304693+00:00",
+        "durationMinutes": 60
+      },
+      "expected": "403",
+      "actual": "HTTP 403",
+      "status": "Pass",
+      "duration_ms": 0.9,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-011",
+      "name": "Offer requires completed interview",
+      "method": "POST",
+      "path": "/Offers",
+      "input": {
+        "applicationId": "bdef02d7-3fb2-47c4-81b5-25b694956dca",
+        "position": "QA Evidence Engineer",
+        "salary": 150000,
+        "startDate": "2026-11-08T07:47:21.305638+00:00",
+        "expiryDate": "2026-10-23T07:47:21.305645+00:00"
+      },
+      "expected": "400 and body assertions",
+      "actual": "HTTP 400",
+      "status": "Pass",
+      "duration_ms": 12.28,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-012",
+      "name": "Staff creates separate onboarding employee",
+      "method": "POST",
+      "path": "/companies/cf766738-acbf-49c8-8b15-a2e7f95da8bd/employees",
+      "input": {
+        "userId": "fdd6f588-c9d3-43e9-afa1-5db22e4f4ee3",
+        "departmentId": "3df83c20-622a-47b2-a554-78cf226d2589",
+        "employeeNumber": "SE3110-7a68eed6",
+        "position": "QA Evidence Engineer",
+        "startDate": "2026-11-08T07:47:21.317988+00:00"
+      },
+      "expected": "201 and body assertions",
+      "actual": "HTTP 500",
+      "status": "Fail",
+      "duration_ms": 105.68,
+      "detail": ""
+    }
+  ],
+  "ids": {},
+  "passed": 11,
+  "failed": 1,
+  "scope": "Live API and PostgreSQL. Reviewed AI screening is not bypassed. Employee created independently through staff endpoint; no interview fixtures or data altered to bypass approval."
+}

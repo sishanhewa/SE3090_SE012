@@ -1,0 +1,290 @@
+{
+  "base_url": "http://127.0.0.1:5155/api",
+  "run_date": "2026-10-09",
+  "checks": [
+    {
+      "id": "TC-ONLIVE-001",
+      "name": "Administrator login",
+      "method": "POST",
+      "path": "/Auth/login",
+      "input": "credentials redacted",
+      "expected": "200 and body assertions",
+      "actual": "HTTP 200",
+      "status": "Pass",
+      "duration_ms": 112.03,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-002",
+      "name": "Register synthetic onboarding candidate",
+      "method": "POST",
+      "path": "/Auth/register",
+      "input": "credentials redacted",
+      "expected": "201 and body assertions",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 80.2,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-003",
+      "name": "Create onboarding candidate profile",
+      "method": "POST",
+      "path": "/CandidateProfiles",
+      "input": {
+        "summary": "Synthetic SE3110 verification profile"
+      },
+      "expected": "201",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 7.3,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-004",
+      "name": "Retrieve published job fixture",
+      "method": "GET",
+      "path": "/jobs",
+      "input": null,
+      "expected": "200 and body assertions",
+      "actual": "HTTP 200",
+      "status": "Pass",
+      "duration_ms": 8.58,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-005",
+      "name": "Submit interview candidate application",
+      "method": "POST",
+      "path": "/Applications/jobs/9fd61350-85e1-4aaa-b4a9-64714b2a0e32",
+      "input": {
+        "coverLetter": "Synthetic interview safe-failure verification"
+      },
+      "expected": "201 and body assertions",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 13.72,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-006",
+      "name": "Move application into screening",
+      "method": "PATCH",
+      "path": "/Applications/66b5ae0a-621d-49a6-b6f0-9b748b5db5e6/status",
+      "input": {
+        "status": "Screening",
+        "notes": "Verification review"
+      },
+      "expected": "204",
+      "actual": "HTTP 204",
+      "status": "Pass",
+      "duration_ms": 6.18,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-007",
+      "name": "Direct shortlist cannot bypass reviewed AI workflow",
+      "method": "PATCH",
+      "path": "/Applications/66b5ae0a-621d-49a6-b6f0-9b748b5db5e6/status",
+      "input": {
+        "status": "Shortlisted",
+        "notes": "Verification shortlist"
+      },
+      "expected": "400 and body assertions",
+      "actual": "HTTP 400",
+      "status": "Pass",
+      "duration_ms": 2.47,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-008",
+      "name": "Unshortlisted application cannot schedule interview",
+      "method": "POST",
+      "path": "/Interviews",
+      "input": {
+        "applicationId": "66b5ae0a-621d-49a6-b6f0-9b748b5db5e6",
+        "scheduledAt": "2026-10-12T07:48:24.961176Z",
+        "durationMinutes": 60
+      },
+      "expected": "400 and body assertions",
+      "actual": "HTTP 400",
+      "status": "Pass",
+      "duration_ms": 8.2,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-009",
+      "name": "Unknown interview does not disclose data",
+      "method": "GET",
+      "path": "/Interviews/00000000-0000-0000-0000-000000000001",
+      "input": null,
+      "expected": "403",
+      "actual": "HTTP 403",
+      "status": "Pass",
+      "duration_ms": 2.52,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-010",
+      "name": "Candidate cannot create an interview",
+      "method": "POST",
+      "path": "/Interviews",
+      "input": {
+        "applicationId": "66b5ae0a-621d-49a6-b6f0-9b748b5db5e6",
+        "scheduledAt": "2026-10-12T07:48:24.972897Z",
+        "durationMinutes": 60
+      },
+      "expected": "403",
+      "actual": "HTTP 403",
+      "status": "Pass",
+      "duration_ms": 0.71,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-011",
+      "name": "Offer requires completed interview",
+      "method": "POST",
+      "path": "/Offers",
+      "input": {
+        "applicationId": "66b5ae0a-621d-49a6-b6f0-9b748b5db5e6",
+        "position": "QA Evidence Engineer",
+        "salary": 150000,
+        "startDate": "2026-11-08T07:48:24.973646Z",
+        "expiryDate": "2026-10-23T07:48:24.973654Z"
+      },
+      "expected": "400 and body assertions",
+      "actual": "HTTP 400",
+      "status": "Pass",
+      "duration_ms": 3.27,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-012",
+      "name": "Staff creates separate onboarding employee",
+      "method": "POST",
+      "path": "/companies/cf766738-acbf-49c8-8b15-a2e7f95da8bd/employees",
+      "input": {
+        "userId": "077fb2e1-031a-4568-86de-18012537204a",
+        "departmentId": "3df83c20-622a-47b2-a554-78cf226d2589",
+        "employeeNumber": "SE3110-58100846",
+        "position": "QA Evidence Engineer",
+        "startDate": "2026-11-08T07:48:24.976994Z"
+      },
+      "expected": "201 and body assertions",
+      "actual": "HTTP 201",
+      "status": "Pass",
+      "duration_ms": 13.84,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-013",
+      "name": "Activation requires assigned template",
+      "method": "PUT",
+      "path": "/companies/cf766738-acbf-49c8-8b15-a2e7f95da8bd/employees/dce6b4c8-b697-4a5e-81ec-0aa6c3301f69",
+      "input": {
+        "status": "Active"
+      },
+      "expected": "400 and body assertions",
+      "actual": "HTTP 400",
+      "status": "Pass",
+      "duration_ms": 30.08,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-014",
+      "name": "Empty onboarding template rejected",
+      "method": "POST",
+      "path": "/companies/cf766738-acbf-49c8-8b15-a2e7f95da8bd/onboarding/templates",
+      "input": {
+        "name": "Invalid evidence template",
+        "tasks": []
+      },
+      "expected": "400",
+      "actual": "HTTP 400",
+      "status": "Pass",
+      "duration_ms": 11.21,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-015",
+      "name": "Create two-task onboarding template",
+      "method": "POST",
+      "path": "/companies/cf766738-acbf-49c8-8b15-a2e7f95da8bd/onboarding/templates",
+      "input": {
+        "name": "SE3110 Verification Induction 26c2a4",
+        "description": "Synthetic report verification",
+        "tasks": [
+          {
+            "title": "Review induction guide",
+            "sortOrder": 1,
+            "isMandatory": true
+          },
+          {
+            "title": "Confirm workspace access",
+            "sortOrder": 2,
+            "isMandatory": true
+          }
+        ]
+      },
+      "expected": "200 and body assertions",
+      "actual": "HTTP 200",
+      "status": "Pass",
+      "duration_ms": 31.97,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-016",
+      "name": "Assign onboarding tasks once",
+      "method": "POST",
+      "path": "/employees/dce6b4c8-b697-4a5e-81ec-0aa6c3301f69/onboarding/assign/5116004c-039f-4394-8764-2180a26285c9",
+      "input": null,
+      "expected": "200 and body assertions",
+      "actual": "HTTP 200",
+      "status": "Pass",
+      "duration_ms": 57.03,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-017",
+      "name": "Duplicate assignment rejected",
+      "method": "POST",
+      "path": "/employees/dce6b4c8-b697-4a5e-81ec-0aa6c3301f69/onboarding/assign/5116004c-039f-4394-8764-2180a26285c9",
+      "input": null,
+      "expected": "400 and body assertions",
+      "actual": "HTTP 400",
+      "status": "Pass",
+      "duration_ms": 6.73,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-018",
+      "name": "Activation blocked by mandatory tasks",
+      "method": "PUT",
+      "path": "/companies/cf766738-acbf-49c8-8b15-a2e7f95da8bd/employees/dce6b4c8-b697-4a5e-81ec-0aa6c3301f69",
+      "input": {
+        "status": "Active"
+      },
+      "expected": "400 and body assertions",
+      "actual": "HTTP 400",
+      "status": "Pass",
+      "duration_ms": 3.84,
+      "detail": ""
+    },
+    {
+      "id": "TC-ONLIVE-019",
+      "name": "Owner can read assigned tasks",
+      "method": "GET",
+      "path": "/employees/dce6b4c8-b697-4a5e-81ec-0aa6c3301f69/onboarding",
+      "input": null,
+      "expected": "200 and body assertions",
+      "actual": "HTTP 500",
+      "status": "Fail",
+      "duration_ms": 20.82,
+      "detail": ""
+    }
+  ],
+  "ids": {},
+  "passed": 18,
+  "failed": 1,
+  "scope": "Live API and PostgreSQL. Reviewed AI screening is not bypassed. Employee created independently through staff endpoint; no interview fixtures or data altered to bypass approval."
+}
