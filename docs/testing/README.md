@@ -43,6 +43,10 @@ The exact tested local composite is supplied in verification-source/. Member bra
 
 The local snapshot includes repaired employee UTC dates, the duplicate task route removal, history insertion fixes, production Flutter widget tests, and production AI validator tests. The onboarding success uses an independently created employee; the full approved screening-to-hire path and external Calendar/Gemini behavior are not claimed.
 
-Raw TRX/XML/JSON/logs, the complete case CSV, defect CSV and cursor-free browser screenshots support the report. Native GitHub screenshots retain each run's actual SHA and outcome. Remote AI still fails pending the responsible member branch. See delivery-status.md for exact local and remote delivery.
+Raw TRX/XML/JSON/logs, the complete case CSV, defect CSV and cursor-free app, native VS Code terminal and GitHub screenshots support the report. Native GitHub screenshots retain each run's actual SHA and outcome. Remote AI still fails pending the responsible member branch. See delivery-status.md for exact local and remote delivery.
 
 Each member must personally review and demonstrate assigned work and declare AI assistance using the report's CLEAR section. The real verification date is after the assignment deadline and is recorded accurately.
+
+## Native terminal evidence revision
+
+Ten styled output cards were replaced by screenshots captured from the real VS Code integrated terminal. Visible cat, tail, sed and jq commands display the retained verification logs and original k6 metrics. These are native terminal views of previously recorded execution, not new test runs. The title bar containing the mouse pointer and unused window area were cropped; log text was not recreated. The report captions and List of Figures identify each replacement. Unused screenshots were removed from this curated evidence folder. All 105 pages remain A4; the 183 clickable index destinations, three native navigation fields, 34 figures and 84 tables were validated. Seven changed pages were visually reviewed; the other 98 are pixel-identical to the prior reviewed render.

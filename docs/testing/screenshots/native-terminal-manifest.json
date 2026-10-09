@@ -1,0 +1,92 @@
+{
+  "live": {
+    "media": "word/media/image2.jpg",
+    "pixels": [
+      2939,
+      1250
+    ],
+    "sha256": "1cd1d20454db00cf2b3510e03a46efacf69f1834a65da1d8d86dd643723d03da",
+    "capture": "Native macOS VS Code integrated terminal; retained log or original metrics; no rerun claimed"
+  },
+  "onboarding-final": {
+    "media": "word/media/image3.jpg",
+    "pixels": [
+      2939,
+      1400
+    ],
+    "sha256": "6ebfdbc5b3ecf99c18df83ac21b50ee6f84a5036ab6e5a02c66b757575bd3659",
+    "capture": "Native macOS VS Code integrated terminal; retained log or original metrics; no rerun claimed"
+  },
+  "load": {
+    "media": "word/media/image6.jpg",
+    "pixels": [
+      2939,
+      670
+    ],
+    "sha256": "3a55a5712025a461d20273df229786fcb63db6f83e952a45101f755cbf6e8532",
+    "capture": "Native macOS VS Code integrated terminal; retained log or original metrics; no rerun claimed"
+  },
+  "react": {
+    "media": "word/media/image12.jpg",
+    "pixels": [
+      2939,
+      1400
+    ],
+    "sha256": "8e6f8bb31eb9ae753f7d85e1b66546601d0c81fe86f6d008561bfac2fd21c0fe",
+    "capture": "Native macOS VS Code integrated terminal; retained log or original metrics; no rerun claimed"
+  },
+  "flutter": {
+    "media": "word/media/image13.jpg",
+    "pixels": [
+      2939,
+      1300
+    ],
+    "sha256": "7b5d926f191ba5caad172ae3210fd4bcd85e77fdfdf9a310b71ea5c394f89b69",
+    "capture": "Native macOS VS Code integrated terminal; retained log or original metrics; no rerun claimed"
+  },
+  "backend-release": {
+    "media": "word/media/image18.jpg",
+    "pixels": [
+      2939,
+      1510
+    ],
+    "sha256": "480f6b614bb5bf89e3ff843ebbff45eb82cfab71f21609f5debbc5a862239064",
+    "capture": "Native macOS VS Code integrated terminal; retained log or original metrics; no rerun claimed"
+  },
+  "ai-after": {
+    "media": "word/media/image19.jpg",
+    "pixels": [
+      2939,
+      1120
+    ],
+    "sha256": "a82a58024647096afd84b4c51bd548c608c1deba340e56bf77072fd5602f96a9",
+    "capture": "Native macOS VS Code integrated terminal; retained log or original metrics; no rerun claimed"
+  },
+  "onboarding-route-before": {
+    "media": "word/media/image22.jpg",
+    "pixels": [
+      2939,
+      790
+    ],
+    "sha256": "21ee023c4b77553076a65accc32b230dc5ac1131b7e50427a8b8cb486f096da2",
+    "capture": "Native macOS VS Code integrated terminal; retained log or original metrics; no rerun claimed"
+  },
+  "onboarding-activation-before": {
+    "media": "word/media/image23.jpg",
+    "pixels": [
+      2939,
+      670
+    ],
+    "sha256": "007c001da7b4659096c8a0a25a8af71d0a6e9ac92da7424a5bd8e7461199de8c",
+    "capture": "Native macOS VS Code integrated terminal; retained log or original metrics; no rerun claimed"
+  },
+  "onboarding-employee-before": {
+    "media": "word/media/image24.jpg",
+    "pixels": [
+      2939,
+      670
+    ],
+    "sha256": "01e94e4d8d0c25ba6a2dafa0ef90970299767d61bff06cdaeae8ade78cb5028a",
+    "capture": "Native macOS VS Code integrated terminal; retained log or original metrics; no rerun claimed"
+  }
+}
